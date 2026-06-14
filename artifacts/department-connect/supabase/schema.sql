@@ -42,6 +42,7 @@ create table if not exists class_sessions (
 );
 
 -- ── live_status ───────────────────────────────────────────
+drop type if exists live_status cascade;
 create table if not exists live_status (
   session_id text primary key references class_sessions(id) on delete cascade,
   status     text not null,
