@@ -5,7 +5,7 @@ outputs = []
 id = "wX0sW1rWAp-vGNS4arfqE"
 uri = "file://artifacts/department-connect/assets/images/icon.png"
 type = "image"
-title = "department connect app icon"
+title = "department-connect-app-icon"
 
 [[generated]]
 id = "57tIKHqY8-vhFrMJlLV4E"
@@ -54,3 +54,9 @@ id = "tlCtecAz0JcRBgITdy7jw"
 uri = "file://artifacts/department-connect/assets/images/pattern-bg.png"
 type = "image"
 title = "purple pattern background"
+
+[[generated]]
+id = "fQEfc4NQ8EwnjG_PXyj6W"
+uri = "file://artifacts/department-connect/assets/images/logo.png"
+type = "image"
+title = "department-connect-logo-transparent"

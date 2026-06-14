@@ -132,9 +132,9 @@ export default function LoginScreen() {
           >
             <View style={[styles.logoWrap, { backgroundColor: colors.primary }]}>
               <Image
-                source={require("@/assets/images/icon.png")}
+                source={require("@/assets/images/logo.png")}
                 style={styles.logoImg}
-                contentFit="cover"
+                contentFit="contain"
               />
             </View>
           </Animated.View>
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
-  logoImg: { width: 80, height: 80 },
+  logoImg: { width: 54, height: 54 },
   appName: { fontSize: 26, fontFamily: "Inter_700Bold", marginBottom: 6 },
   tagline: { fontSize: 14, fontFamily: "Inter_400Regular" },
   form: { gap: 12, marginBottom: 28 },
