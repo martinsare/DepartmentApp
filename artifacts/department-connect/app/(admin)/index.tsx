@@ -107,7 +107,7 @@ export default function AdminDashboard() {
       <Animated.View style={[styles.financeCard, { opacity: fadeAnim }]}>
         {/* Background image */}
         <Image
-          source={require("@/assets/images/campus-hero.png")}
+          source={require("@/assets/images/campus-hero.jpg")}
           style={StyleSheet.absoluteFillObject}
           contentFit="cover"
         />

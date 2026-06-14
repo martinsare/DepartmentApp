@@ -129,7 +129,7 @@ export default function StudentDashboard() {
       {!ongoingSession && (
         <Animated.View style={[{ opacity: fadeAnim }, styles.heroWrap]}>
           <Image
-            source={require("@/assets/images/students-studying.png")}
+            source={require("@/assets/images/students-studying.jpg")}
             style={styles.heroImg}
             contentFit="cover"
           />

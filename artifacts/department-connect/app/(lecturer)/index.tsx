@@ -78,7 +78,7 @@ export default function LecturerDashboard() {
       {/* Lecturer teaching image */}
       <Animated.View style={[{ opacity: fadeAnim }, styles.heroWrap]}>
         <Image
-          source={require("@/assets/images/lecturer-teaching.png")}
+          source={require("@/assets/images/lecturer-teaching.jpg")}
           style={styles.heroImg}
           contentFit="cover"
         />

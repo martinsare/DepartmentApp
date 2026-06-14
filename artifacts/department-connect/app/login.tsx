@@ -156,7 +156,7 @@ export default function LoginScreen() {
       >
         {/* Splash background image */}
         <Image
-          source={require("@/assets/images/splash-bg.png")}
+          source={require("@/assets/images/splash-bg.jpg")}
           style={styles.bgImage}
           contentFit="cover"
         />
