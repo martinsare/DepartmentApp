@@ -27,6 +27,7 @@ const DEMO_ROLES = [
     email: "admin@dept.edu",
     icon: "shield" as const,
     color: "#7C3AED",
+    route: "/(admin)/",
   },
   {
     id: "lect-001",
@@ -34,6 +35,7 @@ const DEMO_ROLES = [
     email: "james@dept.edu",
     icon: "book-open" as const,
     color: "#10B981",
+    route: "/(lecturer)/",
   },
   {
     id: "stud-001",
@@ -42,6 +44,7 @@ const DEMO_ROLES = [
     matric: "CS/21/001",
     icon: "user" as const,
     color: "#3B82F6",
+    route: "/(student)/",
   },
 ];
 
@@ -105,6 +108,12 @@ export default function LoginScreen() {
     ).start();
   }, []);
 
+  const routeForRole = (role?: string) => {
+    if (role === "admin") return "/(admin)/";
+    if (role === "lecturer") return "/(lecturer)/";
+    return "/(student)/";
+  };
+
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
       setError("Please enter your email or matric number and password");
@@ -118,16 +127,16 @@ export default function LoginScreen() {
       setError(result.error);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/");
+      router.replace(routeForRole(result.role) as any);
     }
   };
 
-  const handleDemoLogin = async (userId: string) => {
+  const handleDemoLogin = async (userId: string, route: string) => {
     setDemoLoading(userId);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await loginAsDemo(userId);
     setDemoLoading(null);
-    router.replace("/");
+    router.replace(route as any);
   };
 
   const isEmail = identifier.includes("@") || identifier.length === 0;
@@ -286,7 +295,7 @@ export default function LoginScreen() {
                   styles.demoBtn,
                   { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
-                onPress={() => handleDemoLogin(role.id)}
+                onPress={() => handleDemoLogin(role.id, role.route)}
                 activeOpacity={0.85}
               >
                 {demoLoading === role.id ? (

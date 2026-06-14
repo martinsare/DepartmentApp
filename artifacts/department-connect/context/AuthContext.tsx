@@ -1,26 +1,23 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { DEMO_CREDENTIALS, DEMO_USERS, User } from "@/lib/demoData";
+import { DEMO_CREDENTIALS, DEMO_USERS, User, UserRole } from "@/lib/demoData";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (identifier: string, password: string) => Promise<{ error?: string }>;
-  loginAsDemo: (userId: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<{ error?: string; role?: UserRole }>;
+  loginAsDemo: (userId: string) => Promise<{ role?: UserRole }>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
 const STORAGE_KEY = "dc_demo_user_id";
 
 function resolveIdentifier(identifier: string): string | undefined {
   const lower = identifier.toLowerCase();
   if (DEMO_CREDENTIALS[lower]) return DEMO_CREDENTIALS[lower];
-  const byMatric = DEMO_USERS.find(
-    (u) => u.matric_number?.toLowerCase() === lower
-  );
+  const byMatric = DEMO_USERS.find((u) => u.matric_number?.toLowerCase() === lower);
   if (byMatric) return byMatric.id;
   return undefined;
 }
@@ -33,25 +30,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured && supabase) {
       supabase.auth.getSession().then(({ data }) => {
         if (data.session?.user) {
-          const profile = DEMO_USERS.find(
-            (u) => u.email === data.session!.user.email
-          );
+          const profile = DEMO_USERS.find((u) => u.email === data.session!.user.email);
           if (profile) setUser(profile);
         }
         setLoading(false);
       });
-      const { data: listener } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          if (session?.user) {
-            const profile = DEMO_USERS.find(
-              (u) => u.email === session.user.email
-            );
-            if (profile) setUser(profile);
-          } else {
-            setUser(null);
-          }
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          const profile = DEMO_USERS.find((u) => u.email === session.user.email);
+          if (profile) setUser(profile);
+        } else {
+          setUser(null);
         }
-      );
+      });
       return () => listener.subscription.unsubscribe();
     } else {
       AsyncStorage.getItem(STORAGE_KEY).then((id) => {
@@ -64,14 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = async (identifier: string, _password: string) => {
+  const login = async (identifier: string, _password: string): Promise<{ error?: string; role?: UserRole }> => {
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email: identifier,
         password: _password,
       });
       if (error) return { error: error.message };
-      return {};
+      const profile = DEMO_USERS.find((u) => u.email === data.user?.email);
+      return { role: profile?.role };
     }
     const userId = resolveIdentifier(identifier);
     if (!userId) return { error: "Invalid email, matric number, or password" };
@@ -79,20 +71,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!found) return { error: "User not found" };
     await AsyncStorage.setItem(STORAGE_KEY, found.id);
     setUser(found);
-    return {};
+    return { role: found.role };
   };
 
-  const loginAsDemo = async (userId: string) => {
+  const loginAsDemo = async (userId: string): Promise<{ role?: UserRole }> => {
     const found = DEMO_USERS.find((u) => u.id === userId);
-    if (!found) return;
+    if (!found) return {};
     await AsyncStorage.setItem(STORAGE_KEY, found.id);
     setUser(found);
+    return { role: found.role };
   };
 
   const logout = async () => {
-    if (isSupabaseConfigured && supabase) {
-      await supabase.auth.signOut();
-    }
+    if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
     await AsyncStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };

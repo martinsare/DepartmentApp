@@ -6,7 +6,6 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Easing,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -31,7 +30,6 @@ export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { users, courses, sessions, contributions, payments, announcements, markAnnouncementRead } = useData();
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
   const students = users.filter((u) => u.role === "student");
   const lecturers = users.filter((u) => u.role === "lecturer");
@@ -46,13 +44,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
     Animated.timing(progressAnim, {
       toValue: collectionPct,
-      duration: 1100,
-      delay: 350,
+      duration: 1200,
+      delay: 400,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -68,7 +66,7 @@ export default function AdminDashboard() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: insets.bottom + 90 }]}
+      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 90 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -78,29 +76,20 @@ export default function AdminDashboard() {
           <Text style={[styles.name, { color: colors.foreground }]}>{user?.full_name}</Text>
         </View>
         <TouchableOpacity
-          onPress={async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); await logout(); router.replace("/login"); }}
+          onPress={async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await logout();
+            router.replace("/login");
+          }}
           style={[styles.logoutBtn, { backgroundColor: colors.muted }]}
         >
           <Feather name="log-out" size={18} color={colors.mutedForeground} />
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Campus hero image */}
-      <Animated.View style={[{ opacity: fadeAnim }, styles.heroWrap]}>
-        <Image
-          source={require("@/assets/images/campus-hero.png")}
-          style={styles.heroImg}
-          contentFit="cover"
-        />
-        <View style={[styles.heroBadge, { backgroundColor: colors.primary }]}>
-          <Feather name="shield" size={11} color="#fff" />
-          <Text style={styles.heroBadgeText}>Admin Panel</Text>
-        </View>
-      </Animated.View>
-
       {/* Stats grid */}
       <View style={styles.statsGrid}>
-        {STATS.map((s, i) => (
+        {STATS.map((s) => (
           <Animated.View
             key={s.label}
             style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
@@ -114,15 +103,31 @@ export default function AdminDashboard() {
         ))}
       </View>
 
-      {/* Finance card with animated bar */}
-      <Animated.View style={[styles.financeCard, { backgroundColor: colors.primary, opacity: fadeAnim }]}>
+      {/* Finance card — campus image as background */}
+      <Animated.View style={[styles.financeCard, { opacity: fadeAnim }]}>
+        {/* Background image */}
+        <Image
+          source={require("@/assets/images/campus-hero.png")}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+        />
+        {/* Dark purple overlay */}
+        <View style={styles.financeOverlay} />
+
+        {/* Admin badge top-right */}
+        <View style={styles.heroBadge}>
+          <Feather name="shield" size={11} color="#fff" />
+          <Text style={styles.heroBadgeText}>Admin Panel</Text>
+        </View>
+
+        {/* Content */}
         <View style={styles.financeHeader}>
-          <View>
-            <Text style={styles.financeLabel}>Total Collected</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.financeLabel}>Total Contributions Collected</Text>
             <Text style={styles.financeValue}>₦{totalPaid.toLocaleString()}</Text>
-            <Text style={styles.financeTarget}>Target: ₦{totalTarget.toLocaleString()}</Text>
+            <Text style={styles.financeTarget}>of ₦{totalTarget.toLocaleString()} target</Text>
           </View>
-          <View style={[styles.financePctBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+          <View style={styles.financePctBadge}>
             <Text style={styles.financePctText}>{Math.round(collectionPct)}%</Text>
           </View>
         </View>
@@ -133,6 +138,9 @@ export default function AdminDashboard() {
             }]}
           />
         </View>
+        <Text style={styles.financeCaption}>
+          {students.length} students · {contributions.length} active contributions
+        </Text>
       </Animated.View>
 
       {/* Quick actions */}
@@ -142,7 +150,10 @@ export default function AdminDashboard() {
           <TouchableOpacity
             key={action.label}
             style={[styles.actionBtn, { backgroundColor: action.color + "12", borderColor: action.color + "28" }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(action.route as any); }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(action.route as any);
+            }}
             activeOpacity={0.85}
           >
             <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
@@ -168,28 +179,62 @@ const styles = StyleSheet.create({
   role: { fontSize: 12, fontFamily: "Inter_400Regular" },
   name: { fontSize: 22, fontFamily: "Inter_700Bold" },
   logoutBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  heroWrap: { marginBottom: 20, borderRadius: 18, overflow: "hidden" },
-  heroImg: { width: "100%", height: 130, borderRadius: 18 },
-  heroBadge: {
-    position: "absolute", top: 12, right: 12,
-    flexDirection: "row", alignItems: "center", gap: 4,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
-  },
-  heroBadgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   statCard: { flex: 1, minWidth: "45%", borderWidth: 1, borderRadius: 16, padding: 14, alignItems: "flex-start", gap: 6 },
   statIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   statValue: { fontSize: 26, fontFamily: "Inter_700Bold" },
   statLabel: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  financeCard: { borderRadius: 20, padding: 20, marginBottom: 24 },
-  financeHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
-  financeLabel: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 2 },
-  financeValue: { color: "#fff", fontSize: 28, fontFamily: "Inter_700Bold" },
-  financeTarget: { color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  financePctBadge: { borderRadius: 50, width: 58, height: 58, alignItems: "center", justifyContent: "center" },
+
+  // Finance card with image background
+  financeCard: {
+    borderRadius: 22,
+    overflow: "hidden",
+    padding: 20,
+    marginBottom: 24,
+    minHeight: 170,
+    justifyContent: "flex-end",
+  },
+  financeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(50, 10, 100, 0.78)",
+  },
+  heroBadge: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  heroBadgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  financeHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 12,
+  },
+  financeLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter_400Regular", marginBottom: 4, letterSpacing: 0.3 },
+  financeValue: { color: "#fff", fontSize: 30, fontFamily: "Inter_700Bold" },
+  financeTarget: { color: "rgba(255,255,255,0.55)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  financePctBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
   financePctText: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
-  financeBarBg: { height: 6, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, overflow: "hidden" },
+  financeBarBg: { height: 5, backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 3, overflow: "hidden", marginBottom: 8 },
   financeBarFill: { height: "100%", backgroundColor: "#fff", borderRadius: 3 },
+  financeCaption: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontFamily: "Inter_400Regular" },
+
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 14 },
   actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
   actionBtn: { width: "47%", borderWidth: 1, borderRadius: 16, padding: 14, alignItems: "center", gap: 10 },
