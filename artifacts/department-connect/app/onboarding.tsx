@@ -85,7 +85,7 @@ export default function Onboarding() {
       </View>
 
       {/* Slides */}
-      <Animated.FlatList
+      <FlatList
         ref={flatListRef}
         data={SLIDES}
         keyExtractor={(item) => item.id}
@@ -95,7 +95,7 @@ export default function Onboarding() {
         scrollEventThrottle={16}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: true }
+          { useNativeDriver: false }
         )}
         onMomentumScrollEnd={(e) => {
           const idx = Math.round(e.nativeEvent.contentOffset.x / width);
