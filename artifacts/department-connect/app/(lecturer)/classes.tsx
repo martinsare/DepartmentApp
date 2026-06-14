@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClassCard } from "@/components/ClassCard";
+import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
@@ -29,6 +30,7 @@ export default function LecturerClasses() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ course_id: "", date: "", time: "", venue: "" });
+  const [selectedClass, setSelectedClass] = useState<ClassSession | null>(null);
   const topPad = insets.top;
 
   const mySessions = sessions.filter((s) => s.lecturer_id === user?.id);
@@ -82,7 +84,7 @@ export default function LecturerClasses() {
         ) : (
           mySessions.map((s) => (
             <View key={s.id}>
-              <ClassCard session={s} />
+              <ClassCard session={s} onPress={() => setSelectedClass(s)} />
               {s.status !== "ended" && s.status !== "cancelled" && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: -6, marginBottom: 12 }}>
                   {STATUSES.filter((st) => st !== s.status).map((st) => (
@@ -102,6 +104,8 @@ export default function LecturerClasses() {
           ))
         )}
       </ScrollView>
+
+      <ClassDetailModal session={selectedClass} onClose={() => setSelectedClass(null)} userRole="lecturer" />
 
       {/* Create modal */}
       <Modal visible={modalOpen} transparent animationType="slide">

@@ -26,6 +26,7 @@ export default function AdminContributions() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", amount_per_student: "", deadline: "" });
+  const [viewingContrib, setViewingContrib] = useState<typeof contributions[0] | null>(null);
 
   const students = users.filter((u) => u.role === "student");
 
@@ -93,7 +94,12 @@ export default function AdminContributions() {
           const progress = students.length > 0 ? paidStudents / students.length : 0;
 
           return (
-            <View key={contrib.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity
+              key={contrib.id}
+              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setViewingContrib(contrib); }}
+              activeOpacity={0.9}
+            >
               <View style={styles.cardHeader}>
                 <Text style={[styles.contribTitle, { color: colors.foreground }]}>{contrib.title}</Text>
                 <TouchableOpacity
@@ -157,9 +163,11 @@ export default function AdminContributions() {
                 );
               })}
               {students.length > 5 && (
-                <Text style={[styles.moreText, { color: colors.mutedForeground }]}>+{students.length - 5} more students</Text>
+                <Text style={[styles.moreText, { color: colors.mutedForeground }]}>
+                  Tap card to see all {students.length} students →
+                </Text>
               )}
-            </View>
+            </TouchableOpacity>
           );
         })}
 
@@ -173,6 +181,84 @@ export default function AdminContributions() {
           </View>
         )}
       </ScrollView>
+
+      {/* Contribution Detail Modal - all students */}
+      <Modal visible={!!viewingContrib} transparent animationType="slide" onRequestClose={() => setViewingContrib(null)}>
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setViewingContrib(null)} />
+          {viewingContrib && (() => {
+            const cPayments = payments.filter((p) => p.contribution_id === viewingContrib.id && p.status === "paid");
+            const collected = cPayments.reduce((acc, p) => acc + p.amount, 0);
+            const paidIds = new Set(cPayments.map((p) => p.student_id));
+            const paidCount = paidIds.size;
+            const progress = students.length > 0 ? paidCount / students.length : 0;
+            return (
+              <View style={[{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: insets.bottom + 24, maxHeight: "90%" }, { backgroundColor: colors.background }]}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: 20 }} />
+                <Text style={{ fontSize: 20, fontFamily: "Inter_700Bold", color: colors.foreground, marginBottom: 4 }} numberOfLines={2}>{viewingContrib.title}</Text>
+                <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 14 }}>{viewingContrib.description}</Text>
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 10 }}>
+                  <View>
+                    <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.primary }}>₦{collected.toLocaleString()}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>of ₦{viewingContrib.target_amount.toLocaleString()} target</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Feather name="clock" size={13} color={colors.mutedForeground} />
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>Due {viewingContrib.deadline}</Text>
+                  </View>
+                </View>
+
+                <View style={[{ height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 14 }, { backgroundColor: colors.border }]}>
+                  <View style={{ height: "100%", borderRadius: 3, backgroundColor: colors.primary, width: `${Math.min(progress * 100, 100)}%` as any }} />
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#D1FAE5", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
+                    <Feather name="check-circle" size={12} color="#065F46" />
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: "#065F46" }}>{paidCount} paid</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FEE2E2", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
+                    <Feather name="alert-circle" size={12} color="#991B1B" />
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: "#991B1B" }}>{students.length - paidCount} outstanding</Text>
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>
+                  All Students ({students.length})
+                </Text>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 280 }}>
+                  {students.map((student) => {
+                    const paid = paidIds.has(student.id);
+                    return (
+                      <View key={student.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                        <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: paid ? "#D1FAE5" : "#FEE2E2" }}>
+                          <Feather name={paid ? "check" : "x"} size={13} color={paid ? "#065F46" : "#991B1B"} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground }}>{student.full_name}</Text>
+                          {student.matric_number && (
+                            <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>{student.matric_number}</Text>
+                          )}
+                        </View>
+                        <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: paid ? "#10B981" : "#EF4444" }}>
+                          {paid ? `₦${viewingContrib.amount_per_student.toLocaleString()}` : "Outstanding"}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                <TouchableOpacity
+                  style={{ marginTop: 16, borderRadius: 14, paddingVertical: 14, alignItems: "center", backgroundColor: colors.primary }}
+                  onPress={() => setViewingContrib(null)}
+                >
+                  <Text style={{ color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" }}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
+        </View>
+      </Modal>
 
       {/* Create Contribution Modal */}
       <Modal visible={modalOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalOpen(false)}>

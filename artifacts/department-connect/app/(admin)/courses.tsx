@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
@@ -22,6 +23,8 @@ export default function AdminCourses() {
   const { courses, sessions, addCourse, updateCourse } = useData();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Course | null>(null);
+  const [viewTarget, setViewTarget] = useState<Course | null>(null);
+  const [selectedSession, setSelectedSession] = useState<typeof sessions[0] | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", code: "", lecturer_id: "", enrolled_count: "" });
   const [editForm, setEditForm] = useState({ title: "", code: "", enrolled_count: "" });
@@ -86,14 +89,19 @@ export default function AdminCourses() {
           const activeSessions = courseSessions.filter((s) => s.status === "scheduled" || s.status === "ongoing").length;
           const endedSessions = courseSessions.filter((s) => s.status === "ended").length;
           return (
-            <View key={course.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity
+              key={course.id}
+              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setViewTarget(course); }}
+              activeOpacity={0.85}
+            >
               <View style={styles.cardHeader}>
                 <View style={[styles.codeWrap, { backgroundColor: colors.primary }]}>
                   <Text style={styles.codeText}>{course.code}</Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.editBtn, { backgroundColor: colors.muted }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openEdit(course); }}
+                  onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openEdit(course); }}
                 >
                   <Feather name="edit-2" size={15} color={colors.mutedForeground} />
                 </TouchableOpacity>
@@ -128,7 +136,7 @@ export default function AdminCourses() {
                   <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Students</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
 
@@ -142,6 +150,76 @@ export default function AdminCourses() {
           </View>
         )}
       </ScrollView>
+
+      {/* Course Detail Bottom Sheet */}
+      <Modal visible={!!viewTarget} transparent animationType="slide" onRequestClose={() => setViewTarget(null)}>
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setViewTarget(null)} />
+          <View style={[{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: insets.bottom + 28 }, { backgroundColor: colors.background }]}>
+            <View style={[styles.handle, { backgroundColor: colors.border, alignSelf: "center", marginBottom: 20 }]} />
+            {viewTarget && (() => {
+              const courseSessions = sessions.filter((s) => s.course_id === viewTarget.id);
+              const STATUS_COLOR: Record<string, string> = { scheduled: "#3B82F6", ongoing: "#10B981", ended: colors.mutedForeground, cancelled: "#EF4444" };
+              return (
+                <>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                    <View style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 }}>
+                      <Text style={{ color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" }}>{viewTarget.code}</Text>
+                    </View>
+                    <Text style={{ flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: colors.foreground }} numberOfLines={2}>{viewTarget.title}</Text>
+                  </View>
+                  <View style={[{ borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 16 }, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <Feather name="user" size={14} color={colors.primary} />
+                      <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>Lecturer</Text>
+                      <Text style={{ flex: 1, textAlign: "right", fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{viewTarget.lecturer_name ?? "—"}</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Feather name="users" size={14} color={colors.primary} />
+                      <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>Enrolled</Text>
+                      <Text style={{ flex: 1, textAlign: "right", fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{viewTarget.enrolled_count} students</Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>
+                    Sessions ({courseSessions.length})
+                  </Text>
+                  <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
+                    {courseSessions.length === 0 && (
+                      <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingVertical: 20 }}>No sessions yet</Text>
+                    )}
+                    {courseSessions.map((s) => (
+                      <TouchableOpacity
+                        key={s.id}
+                        style={[{ borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 10 }, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => { setViewTarget(null); setTimeout(() => setSelectedSession(s), 300); }}
+                        activeOpacity={0.8}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{s.date} · {s.time}</Text>
+                          <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>{s.venue}</Text>
+                        </View>
+                        <View style={{ backgroundColor: (STATUS_COLOR[s.status] ?? colors.mutedForeground) + "20", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
+                          <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: STATUS_COLOR[s.status] ?? colors.mutedForeground }}>
+                            {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  <TouchableOpacity
+                    style={{ marginTop: 12, borderRadius: 14, paddingVertical: 14, alignItems: "center", backgroundColor: colors.primary }}
+                    onPress={() => setViewTarget(null)}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" }}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
+
+      <ClassDetailModal session={selectedSession} onClose={() => setSelectedSession(null)} userRole="admin" />
 
       {/* Create Course Modal */}
       <Modal visible={createOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setCreateOpen(false)}>

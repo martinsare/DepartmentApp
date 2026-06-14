@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { UserDetailModal } from "@/components/UserDetailModal";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
 import { User, UserRole } from "@/lib/demoData";
@@ -40,6 +41,7 @@ export default function AdminAccounts() {
   const [form, setForm] = useState({ full_name: "", email: "", matric_number: "", level: "200L", phone: "" });
   const [saving, setSaving] = useState(false);
   const [localUsers, setLocalUsers] = useState<User[]>(users);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const topPad = insets.top;
 
   const filtered = localUsers.filter((u) => {
@@ -153,12 +155,14 @@ export default function AdminAccounts() {
           {filtered.length} account{filtered.length !== 1 ? "s" : ""}
         </Text>
         {filtered.map((u) => (
-          <View
+          <TouchableOpacity
             key={u.id}
             style={[
               styles.userRow,
               { backgroundColor: colors.card, borderColor: colors.border },
             ]}
+            onPress={() => setSelectedUser(u)}
+            activeOpacity={0.85}
           >
             <View
               style={[styles.avatar, { backgroundColor: ROLE_COLORS[u.role] }]}
@@ -203,9 +207,11 @@ export default function AdminAccounts() {
                 </Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
 
       {/* Create account modal */}
       <Modal visible={modalOpen} transparent animationType="slide">
