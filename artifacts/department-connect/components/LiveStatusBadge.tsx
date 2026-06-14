@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, StyleSheet, Text, View } from "react-native";
 import { LiveStatus } from "@/lib/demoData";
 
 const STATUS_CONFIG: Record<
@@ -26,8 +26,8 @@ export function LiveStatusBadge({ status }: Props) {
     if (!config.pulse) return;
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 0.3, duration: 800, useNativeDriver: Platform.OS !== "web" }),
-        Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: Platform.OS !== "web" }),
+        Animated.timing(pulse, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
       ])
     );
     anim.start();

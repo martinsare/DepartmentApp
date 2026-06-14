@@ -71,7 +71,7 @@ export default function LoginScreen() {
       toValue: 1,
       duration: 700,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: Platform.OS !== "web",
+      useNativeDriver: true,
     }).start();
     // Form slide up
     Animated.parallel([
@@ -80,13 +80,13 @@ export default function LoginScreen() {
         duration: 600,
         delay: 250,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: Platform.OS !== "web",
+        useNativeDriver: true,
       }),
       Animated.timing(formOpacity, {
         toValue: 1,
         duration: 600,
         delay: 250,
-        useNativeDriver: Platform.OS !== "web",
+        useNativeDriver: true,
       }),
     ]).start();
     // Pulse on icon
@@ -96,13 +96,13 @@ export default function LoginScreen() {
           toValue: 1.06,
           duration: 1800,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: Platform.OS !== "web",
+          useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 1800,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: Platform.OS !== "web",
+          useNativeDriver: true,
         }),
       ])
     ).start();
