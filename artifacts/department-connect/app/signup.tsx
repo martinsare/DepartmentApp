@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
+import { LottiePlayer } from "@/components/LottiePlayer";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -75,9 +76,7 @@ export default function SignupScreen() {
   if (done) {
     return (
       <View style={[styles.doneWrap, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <View style={[styles.doneIcon, { backgroundColor: "#EDE9FE" }]}>
-          <Feather name="clock" size={36} color="#7C3AED" />
-        </View>
+        <LottiePlayer animation="loading" size={120} loop speed={0.7} />
         <Text style={[styles.doneTitle, { color: colors.foreground }]}>Account Submitted</Text>
         <Text style={[styles.doneSub, { color: colors.mutedForeground }]}>
           Your account is pending review.{"\n\n"}

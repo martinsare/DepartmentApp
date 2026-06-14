@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
+// ActivityIndicator replaced by LottiePlayer
+import { LottiePlayer } from "@/components/LottiePlayer";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -17,7 +19,7 @@ export default function Index() {
   if (loading || onboarded === null) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LottiePlayer animation="loading" size={100} loop />
       </View>
     );
   }

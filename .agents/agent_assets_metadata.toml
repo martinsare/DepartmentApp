@@ -60,3 +60,21 @@ id = "fQEfc4NQ8EwnjG_PXyj6W"
 uri = "file://artifacts/department-connect/assets/images/logo.png"
 type = "image"
 title = "department-connect-logo-transparent"
+
+[[generated]]
+id = "r5ZEUO6pbFl5TMU-UsQvP"
+uri = "file://artifacts/department-connect/assets/images/onboard-1.png"
+type = "image"
+title = "onboarding-notifications-illustration"
+
+[[generated]]
+id = "h5Dmpz8doNv3wFUHKnOQq"
+uri = "file://artifacts/department-connect/assets/images/onboard-2.png"
+type = "image"
+title = "onboarding-attendance-qr-illustration"
+
+[[generated]]
+id = "1160x-s_lQ7sXOuSMJMRy"
+uri = "file://artifacts/department-connect/assets/images/onboard-3.png"
+type = "image"
+title = "onboarding-dashboard-illustration"

@@ -1,4 +1,3 @@
-import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -21,27 +20,24 @@ const { width } = Dimensions.get("window");
 const SLIDES = [
   {
     id: "1",
-    icon: "bell" as const,
-    iconBg: "#EDE9FE",
-    iconColor: "#7C3AED",
+    image: require("@/assets/images/onboard-1.png"),
+    accent: "#7C3AED",
     title: "Stay Informed",
     subtitle:
       "Get real-time announcements from lecturers and admin. Never miss a notice, deadline, or venue change.",
   },
   {
     id: "2",
-    icon: "maximize" as const,
-    iconBg: "#D1FAE5",
-    iconColor: "#059669",
+    image: require("@/assets/images/onboard-2.png"),
+    accent: "#10B981",
     title: "Track Attendance",
     subtitle:
       "Scan QR codes in class and watch your attendance record update instantly. Know where you stand at all times.",
   },
   {
     id: "3",
-    icon: "grid" as const,
-    iconBg: "#DBEAFE",
-    iconColor: "#2563EB",
+    image: require("@/assets/images/onboard-3.png"),
+    accent: "#3B82F6",
     title: "All in One Place",
     subtitle:
       "Courses, class schedules, contributions, and more — everything your department needs, right in your pocket.",
@@ -75,6 +71,8 @@ export default function Onboarding() {
     router.replace("/login");
   };
 
+  const activeAccent = SLIDES[activeIndex]?.accent ?? colors.primary;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Skip */}
@@ -103,18 +101,13 @@ export default function Onboarding() {
         }}
         renderItem={({ item }) => (
           <View style={[styles.slide, { width }]}>
-            {/* Illustration */}
             <View style={styles.illustrationWrap}>
-              <View style={[styles.illustrationOuter, { backgroundColor: item.iconBg + "60" }]}>
-                <View style={[styles.illustrationInner, { backgroundColor: item.iconBg }]}>
-                  <Feather name={item.icon} size={52} color={item.iconColor} />
-                </View>
-              </View>
-              {/* Decorative rings */}
-              <View style={[styles.ring1, { borderColor: item.iconBg }]} />
-              <View style={[styles.ring2, { borderColor: item.iconBg + "50" }]} />
+              <Image
+                source={item.image}
+                style={styles.illustration}
+                contentFit="contain"
+              />
             </View>
-
             <Text style={[styles.slideTitle, { color: colors.foreground }]}>{item.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>
               {item.subtitle}
@@ -142,14 +135,7 @@ export default function Onboarding() {
             return (
               <Animated.View
                 key={i}
-                style={[
-                  styles.dot,
-                  {
-                    width: dotWidth,
-                    opacity,
-                    backgroundColor: colors.primary,
-                  },
-                ]}
+                style={[styles.dot, { width: dotWidth, opacity, backgroundColor: activeAccent }]}
               />
             );
           })}
@@ -157,18 +143,13 @@ export default function Onboarding() {
 
         {/* CTA */}
         <TouchableOpacity
-          style={[styles.btn, { backgroundColor: colors.primary }]}
+          style={[styles.btn, { backgroundColor: activeAccent }]}
           onPress={handleNext}
           activeOpacity={0.85}
         >
           <Text style={styles.btnText}>
             {activeIndex === SLIDES.length - 1 ? "Get Started" : "Next"}
           </Text>
-          <Feather
-            name={activeIndex === SLIDES.length - 1 ? "arrow-right" : "chevron-right"}
-            size={18}
-            color="#fff"
-          />
         </TouchableOpacity>
       </View>
     </View>
@@ -183,63 +164,38 @@ const styles = StyleSheet.create({
   },
   skipText: { fontSize: 14, fontFamily: "Inter_500Medium" },
   slide: {
-    paddingHorizontal: 36,
+    paddingHorizontal: 28,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 60,
+    paddingBottom: 40,
   },
   illustrationWrap: {
-    width: 220,
-    height: 220,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 48,
-    position: "relative",
+    width: width - 56,
+    height: (width - 56) * 1.1,
+    marginBottom: 40,
+    borderRadius: 24,
+    overflow: "hidden",
   },
-  illustrationOuter: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  illustrationInner: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ring1: {
-    position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 1.5,
-  },
-  ring2: {
-    position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 1,
+  illustration: {
+    width: "100%",
+    height: "100%",
   },
   slideTitle: {
     fontSize: 30,
     fontFamily: "Inter_700Bold",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 14,
     letterSpacing: -0.5,
   },
   slideSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    lineHeight: 26,
+    lineHeight: 24,
   },
   bottom: {
     paddingHorizontal: 24,
-    gap: 24,
+    gap: 20,
     alignItems: "center",
   },
   dots: {
