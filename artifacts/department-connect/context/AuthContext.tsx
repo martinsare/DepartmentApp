@@ -1,26 +1,28 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { DEMO_CREDENTIALS, DEMO_USERS, User, UserRole } from "@/lib/demoData";
+import { User, UserRole } from "@/lib/demoData";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { DEFAULT_DEPARTMENT_ID } from "@/lib/demoData";
+
+interface SignUpData {
+  email: string;
+  password: string;
+  full_name: string;
+  role: "student" | "lecturer";
+  matric_number?: string;
+  level?: string;
+  phone?: string;
+}
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (identifier: string, password: string) => Promise<{ error?: string; role?: UserRole }>;
-  loginAsDemo: (userId: string) => Promise<{ role?: UserRole }>;
+  login: (email: string, password: string) => Promise<{ error?: string; role?: UserRole }>;
+  signup: (data: SignUpData) => Promise<{ error?: string }>;
+  resetPassword: (email: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const STORAGE_KEY = "dc_demo_user_id";
-
-function resolveIdentifier(identifier: string): string | undefined {
-  const lower = identifier.toLowerCase();
-  if (DEMO_CREDENTIALS[lower]) return DEMO_CREDENTIALS[lower];
-  const byMatric = DEMO_USERS.find((u) => u.matric_number?.toLowerCase() === lower);
-  if (byMatric) return byMatric.id;
-  return undefined;
-}
 
 async function fetchProfile(email: string): Promise<User | null> {
   if (!supabase) return null;
@@ -48,83 +50,123 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isSupabaseConfigured && supabase) {
-      // Restore session from Supabase
-      supabase.auth.getSession().then(async ({ data }) => {
-        if (data.session?.user?.email) {
-          const profile = await fetchProfile(data.session.user.email);
-          setUser(profile ?? DEMO_USERS.find((u) => u.email === data.session!.user.email) ?? null);
-        }
-        setLoading(false);
-      });
-
-      const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.user?.email) {
-          const profile = await fetchProfile(session.user.email);
-          setUser(profile ?? DEMO_USERS.find((u) => u.email === session.user.email) ?? null);
-        } else {
-          setUser(null);
-        }
-      });
-      return () => listener.subscription.unsubscribe();
-    } else {
-      // Demo mode — restore from AsyncStorage
-      AsyncStorage.getItem(STORAGE_KEY).then((id) => {
-        if (id) {
-          const found = DEMO_USERS.find((u) => u.id === id);
-          if (found) setUser(found);
-        }
-        setLoading(false);
-      });
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return;
     }
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session?.user?.email) {
+        const profile = await fetchProfile(data.session.user.email);
+        setUser(profile);
+      }
+      setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user?.email) {
+        const profile = await fetchProfile(session.user.email);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const login = async (
-    identifier: string,
+    email: string,
     password: string
   ): Promise<{ error?: string; role?: UserRole }> => {
-    if (isSupabaseConfigured && supabase) {
-      // Try Supabase auth first
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email: identifier.toLowerCase(),
-        password,
-      });
-      if (!error && data.user?.email) {
-        const profile = await fetchProfile(data.user.email);
-        if (profile) {
-          setUser(profile);
-          return { role: profile.role };
-        }
-      }
-      // Fall through to demo login if Supabase auth fails (demo users aren't in auth)
+    if (!isSupabaseConfigured || !supabase) {
+      return { error: "Supabase is not configured. Please check your environment variables." };
     }
 
-    // Demo mode login (email, matric number, or password = anything)
-    const userId = resolveIdentifier(identifier);
-    if (!userId) return { error: "Invalid email, matric number, or password" };
-    const found = DEMO_USERS.find((u) => u.id === userId);
-    if (!found) return { error: "User not found" };
-    await AsyncStorage.setItem(STORAGE_KEY, found.id);
-    setUser(found);
-    return { role: found.role };
+    const { error, data } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password,
+    });
+
+    if (error) {
+      if (error.message.includes("Invalid login credentials")) {
+        return { error: "Incorrect email or password." };
+      }
+      if (error.message.includes("Email not confirmed")) {
+        return { error: "Please verify your email before logging in." };
+      }
+      return { error: error.message };
+    }
+
+    if (data.user?.email) {
+      const profile = await fetchProfile(data.user.email);
+      if (profile) {
+        setUser(profile);
+        return { role: profile.role };
+      }
+      return { error: "Account found but profile is missing. Contact your department admin." };
+    }
+
+    return { error: "Login failed. Please try again." };
   };
 
-  const loginAsDemo = async (userId: string): Promise<{ role?: UserRole }> => {
-    const found = DEMO_USERS.find((u) => u.id === userId);
-    if (!found) return {};
-    await AsyncStorage.setItem(STORAGE_KEY, found.id);
-    setUser(found);
-    return { role: found.role };
+  const signup = async (signUpData: SignUpData): Promise<{ error?: string }> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { error: "Supabase is not configured. Please check your environment variables." };
+    }
+
+    const { error: authError, data } = await supabase.auth.signUp({
+      email: signUpData.email.toLowerCase().trim(),
+      password: signUpData.password,
+    });
+
+    if (authError) {
+      if (authError.message.includes("already registered")) {
+        return { error: "An account with this email already exists." };
+      }
+      return { error: authError.message };
+    }
+
+    if (!data.user) return { error: "Signup failed. Please try again." };
+
+    const profileId = data.user.id;
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: profileId,
+      role: signUpData.role,
+      full_name: signUpData.full_name.trim(),
+      email: signUpData.email.toLowerCase().trim(),
+      matric_number: signUpData.matric_number?.trim() || null,
+      level: signUpData.level || null,
+      phone: signUpData.phone?.trim() || null,
+      department_id: DEFAULT_DEPARTMENT_ID,
+    });
+
+    if (profileError) {
+      return { error: "Account created but profile setup failed. Please contact your admin." };
+    }
+
+    return {};
+  };
+
+  const resetPassword = async (email: string): Promise<{ error?: string }> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { error: "Supabase is not configured." };
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.toLowerCase().trim(),
+      { redirectTo: undefined }
+    );
+    if (error) return { error: error.message };
+    return {};
   };
 
   const logout = async () => {
     if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
-    await AsyncStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginAsDemo, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );

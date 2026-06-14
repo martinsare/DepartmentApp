@@ -6,14 +6,6 @@ import {
   ClassSession,
   Contribution,
   Course,
-  DEMO_ANNOUNCEMENTS,
-  DEMO_ATTENDANCE,
-  DEMO_CONTRIBUTIONS,
-  DEMO_LIVE_STATUS,
-  DEMO_PAYMENTS,
-  DEMO_SESSIONS,
-  DEMO_COURSES,
-  DEMO_USERS,
   LiveStatus,
   Payment,
   User,
@@ -44,8 +36,6 @@ interface DataContextValue {
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 
 function buildUserMap(users: User[]): Map<string, User> {
   return new Map(users.map((u) => [u.id, u]));
@@ -131,17 +121,15 @@ function rowsToLiveStatus(rows: any[]): Record<string, LiveStatus> {
   return map;
 }
 
-// ── provider ─────────────────────────────────────────────────────────────────
-
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [sessions, setSessions] = useState<ClassSession[]>(DEMO_SESSIONS);
-  const [courses, setCourses] = useState<Course[]>(DEMO_COURSES);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(DEMO_ANNOUNCEMENTS);
-  const [contributions, setContributions] = useState<Contribution[]>(DEMO_CONTRIBUTIONS);
-  const [payments, setPayments] = useState<Payment[]>(DEMO_PAYMENTS);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(DEMO_ATTENDANCE);
-  const [liveStatus, setLiveStatus] = useState<Record<string, LiveStatus>>(DEMO_LIVE_STATUS);
-  const [users, setUsers] = useState<User[]>(DEMO_USERS);
+  const [sessions, setSessions] = useState<ClassSession[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [liveStatus, setLiveStatus] = useState<Record<string, LiveStatus>>({});
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const readIdsRef = useRef<Set<string>>(new Set());
@@ -186,34 +174,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const fetchedCourses = enrichCourses(courseRows ?? [], userMap);
       const courseMap = buildCourseMap(fetchedCourses);
 
-      setUsers(fetchedUsers.length ? fetchedUsers : DEMO_USERS);
-      setCourses(fetchedCourses.length ? fetchedCourses : DEMO_COURSES);
-      setSessions(
-        sessionRows?.length
-          ? enrichSessions(sessionRows, courseMap, userMap)
-          : DEMO_SESSIONS
-      );
-      setAnnouncements(
-        annRows?.length
-          ? enrichAnnouncements(annRows, userMap, readIdsRef.current)
-          : DEMO_ANNOUNCEMENTS
-      );
-      setContributions((contribRows ?? []).length ? (contribRows as Contribution[]) : DEMO_CONTRIBUTIONS);
-      setPayments((paymentRows ?? []).length ? (paymentRows as Payment[]) : DEMO_PAYMENTS);
-      setAttendance(
-        attendRows?.length
-          ? enrichAttendance(attendRows, userMap)
-          : DEMO_ATTENDANCE
-      );
-      setLiveStatus((liveRows ?? []).length ? rowsToLiveStatus(liveRows) : DEMO_LIVE_STATUS);
+      setUsers(fetchedUsers);
+      setCourses(fetchedCourses);
+      setSessions(enrichSessions(sessionRows ?? [], courseMap, userMap));
+      setAnnouncements(enrichAnnouncements(annRows ?? [], userMap, readIdsRef.current));
+      setContributions((contribRows ?? []) as Contribution[]);
+      setPayments((paymentRows ?? []) as Payment[]);
+      setAttendance(enrichAttendance(attendRows ?? [], userMap));
+      setLiveStatus(rowsToLiveStatus(liveRows ?? []));
     } catch (e) {
-      console.warn("Supabase fetch failed, using demo data", e);
+      console.warn("Supabase fetch failed", e);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // ── initial load + realtime ────────────────────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setLoading(false);
@@ -222,7 +197,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     fetchAll();
 
-    // Realtime: new announcements
     const annChannel = supabase
       .channel("rt-announcements")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "announcements" }, (payload) => {
@@ -251,7 +225,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    // Realtime: live_status changes
     const liveChannel = supabase
       .channel("rt-live-status")
       .on("postgres_changes", { event: "*", schema: "public", table: "live_status" }, (payload) => {
@@ -264,7 +237,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    // Realtime: session status changes
     const sessChannel = supabase
       .channel("rt-sessions")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "class_sessions" }, (payload) => {
@@ -282,13 +254,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchAll]);
 
-  // ── local read tracking ────────────────────────────────────────────────────
   const markAnnouncementRead = useCallback((id: string) => {
     readIdsRef.current.add(id);
     setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, read: true } : a)));
   }, []);
-
-  // ── write operations ───────────────────────────────────────────────────────
 
   const updateSessionStatus = useCallback(async (id: string, status: ClassSession["status"]) => {
     setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));

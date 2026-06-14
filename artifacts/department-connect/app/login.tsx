@@ -20,60 +20,28 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
-const DEMO_ROLES = [
-  {
-    id: "admin-001",
-    label: "Admin",
-    email: "admin@dept.edu",
-    icon: "shield" as const,
-    color: "#7C3AED",
-    route: "/(admin)/",
-  },
-  {
-    id: "lect-001",
-    label: "Lecturer",
-    email: "james@dept.edu",
-    icon: "book-open" as const,
-    color: "#10B981",
-    route: "/(lecturer)/",
-  },
-  {
-    id: "stud-001",
-    label: "Student",
-    email: "john@student.edu",
-    matric: "CS/21/001",
-    icon: "user" as const,
-    color: "#3B82F6",
-    route: "/(student)/",
-  },
-];
-
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { login, loginAsDemo } = useAuth();
-  const [identifier, setIdentifier] = useState("");
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  // Animations
   const logoAnim = useRef(new Animated.Value(0)).current;
   const formAnim = useRef(new Animated.Value(40)).current;
   const formOpacity = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Logo fade in
     Animated.timing(logoAnim, {
       toValue: 1,
       duration: 700,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-    // Form slide up
     Animated.parallel([
       Animated.timing(formAnim, {
         toValue: 0,
@@ -89,7 +57,6 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-    // Pulse on icon
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -115,31 +82,22 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!identifier.trim() || !password.trim()) {
-      setError("Please enter your email or matric number and password");
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter your email and password.");
       return;
     }
     setLoading(true);
     setError("");
-    const result = await login(identifier.trim(), password);
+    const result = await login(email.trim(), password);
     setLoading(false);
     if (result.error) {
       setError(result.error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace(routeForRole(result.role) as any);
     }
   };
-
-  const handleDemoLogin = async (userId: string, route: string) => {
-    setDemoLoading(userId);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await loginAsDemo(userId);
-    setDemoLoading(null);
-    router.replace(route as any);
-  };
-
-  const isEmail = identifier.includes("@") || identifier.length === 0;
 
   return (
     <KeyboardAvoidingView
@@ -149,22 +107,20 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 },
+          { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Splash background image */}
+        {/* Background image */}
         <Image
           source={require("@/assets/images/splash-bg.jpg")}
           style={styles.bgImage}
           contentFit="cover"
         />
 
-        {/* Logo section */}
-        <Animated.View
-          style={[styles.logoSection, { opacity: logoAnim }]}
-        >
+        {/* Logo */}
+        <Animated.View style={[styles.logoSection, { opacity: logoAnim }]}>
           <Animated.View
             style={[
               styles.logoOuter,
@@ -182,9 +138,7 @@ export default function LoginScreen() {
               />
             </View>
           </Animated.View>
-          <Text style={[styles.appName, { color: colors.foreground }]}>
-            Department Connect
-          </Text>
+          <Text style={[styles.appName, { color: colors.foreground }]}>Department Connect</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
             Your department, always connected
           </Text>
@@ -197,29 +151,27 @@ export default function LoginScreen() {
             { opacity: formOpacity, transform: [{ translateY: formAnim }] },
           ]}
         >
+          {/* Email */}
           <View
             style={[
               styles.inputWrap,
               { borderColor: colors.border, backgroundColor: colors.muted },
             ]}
           >
-            <Feather
-              name={isEmail ? "mail" : "hash"}
-              size={17}
-              color={colors.mutedForeground}
-            />
+            <Feather name="mail" size={17} color={colors.mutedForeground} />
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="Email or matric number"
+              placeholder="Email address"
               placeholderTextColor={colors.mutedForeground}
-              value={identifier}
-              onChangeText={setIdentifier}
+              value={email}
+              onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
 
+          {/* Password */}
           <View
             style={[
               styles.inputWrap,
@@ -244,6 +196,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Error */}
           {error ? (
             <View style={styles.errorRow}>
               <Feather name="alert-circle" size={14} color="#EF4444" />
@@ -251,12 +204,16 @@ export default function LoginScreen() {
             </View>
           ) : null}
 
-          <TouchableOpacity style={styles.forgotRow}>
-            <Text style={[styles.forgotText, { color: colors.primary }]}>
-              Forgot password?
-            </Text>
+          {/* Forgot password */}
+          <TouchableOpacity
+            style={styles.forgotRow}
+            onPress={() => router.push("/forgot-password")}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
           </TouchableOpacity>
 
+          {/* Sign in button */}
           <TouchableOpacity
             style={[
               styles.loginBtn,
@@ -277,62 +234,27 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Demo shortcuts */}
-        <Animated.View style={{ opacity: formOpacity }}>
-          <View style={styles.dividerRow}>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>
-              Demo accounts
-            </Text>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          </View>
+        {/* Sign up link */}
+        <Animated.View style={[styles.signupRow, { opacity: formOpacity }]}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>
+            New to Department Connect?
+          </Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        </Animated.View>
 
-          <View style={styles.demoSection}>
-            {DEMO_ROLES.map((role) => (
-              <TouchableOpacity
-                key={role.id}
-                style={[
-                  styles.demoBtn,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-                onPress={() => handleDemoLogin(role.id, role.route)}
-                activeOpacity={0.85}
-              >
-                {demoLoading === role.id ? (
-                  <ActivityIndicator
-                    color={role.color}
-                    size="small"
-                    style={{ width: 38 }}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.demoIcon,
-                      { backgroundColor: role.color + "20" },
-                    ]}
-                  >
-                    <Feather name={role.icon} size={16} color={role.color} />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.demoLabel, { color: colors.foreground }]}>
-                    {role.label}
-                  </Text>
-                  <Text
-                    style={[styles.demoEmail, { color: colors.mutedForeground }]}
-                  >
-                    {role.email}
-                    {"matric" in role ? ` · ${role.matric}` : ""}
-                  </Text>
-                </View>
-                <Feather
-                  name="arrow-right"
-                  size={16}
-                  color={colors.mutedForeground}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
+        <Animated.View style={{ opacity: formOpacity }}>
+          <TouchableOpacity
+            style={[
+              styles.signupBtn,
+              { borderColor: colors.primary, backgroundColor: colors.primary + "10" },
+            ]}
+            onPress={() => router.push("/signup")}
+            activeOpacity={0.85}
+          >
+            <Feather name="user-plus" size={18} color={colors.primary} />
+            <Text style={[styles.signupBtnText, { color: colors.primary }]}>Create Account</Text>
+          </TouchableOpacity>
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -349,7 +271,7 @@ const styles = StyleSheet.create({
     height: 300,
     opacity: 0.07,
   },
-  logoSection: { alignItems: "center", marginBottom: 32 },
+  logoSection: { alignItems: "center", marginBottom: 40 },
   logoOuter: {
     width: 100,
     height: 100,
@@ -374,7 +296,7 @@ const styles = StyleSheet.create({
   logoImg: { width: 80, height: 80 },
   appName: { fontSize: 26, fontFamily: "Inter_700Bold", marginBottom: 6 },
   tagline: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  form: { gap: 12, marginBottom: 24 },
+  form: { gap: 12, marginBottom: 28 },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -385,17 +307,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  errorText: {
-    color: "#EF4444",
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    flex: 1,
-  },
+  errorRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
   forgotRow: { alignItems: "flex-end" },
   forgotText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   loginBtn: {
@@ -408,30 +321,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   loginBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  dividerRow: {
+  signupRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     marginBottom: 16,
   },
-  divider: { flex: 1, height: 1 },
-  dividerText: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  demoSection: { gap: 10 },
-  demoBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center" },
+  signupBtn: {
+    paddingVertical: 16,
     borderRadius: 14,
-    padding: 14,
-    gap: 12,
-  },
-  demoIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    borderWidth: 1.5,
     alignItems: "center",
+    flexDirection: "row",
     justifyContent: "center",
+    gap: 8,
   },
-  demoLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  demoEmail: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  signupBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

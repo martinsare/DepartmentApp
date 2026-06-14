@@ -15,12 +15,12 @@ import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { Course, DEMO_USERS } from "@/lib/demoData";
+import { Course } from "@/lib/demoData";
 
 export default function AdminCourses() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { courses, sessions, addCourse, updateCourse } = useData();
+  const { courses, sessions, users, addCourse, updateCourse } = useData();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Course | null>(null);
   const [viewTarget, setViewTarget] = useState<Course | null>(null);
@@ -29,7 +29,7 @@ export default function AdminCourses() {
   const [form, setForm] = useState({ title: "", code: "", lecturer_id: "", enrolled_count: "" });
   const [editForm, setEditForm] = useState({ title: "", code: "", enrolled_count: "" });
 
-  const lecturers = DEMO_USERS.filter((u) => u.role === "lecturer");
+  const lecturers = users.filter((u) => u.role === "lecturer");
 
   const openEdit = (course: Course) => {
     setEditTarget(course);

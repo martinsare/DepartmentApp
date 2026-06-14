@@ -24,9 +24,12 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="signup" options={{ headerShown: false }} />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="(student)" options={{ headerShown: false }} />
       <Stack.Screen name="(lecturer)" options={{ headerShown: false }} />
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
@@ -45,7 +48,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     requestNotificationPermission();
-    // Render after 3 s max regardless of font state (slow network fallback)
     const t = setTimeout(() => {
       setTimedOut(true);
       SplashScreen.hideAsync().catch(() => {});

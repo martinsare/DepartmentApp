@@ -18,7 +18,7 @@ import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { ClassSession, DEMO_COURSES } from "@/lib/demoData";
+import { ClassSession } from "@/lib/demoData";
 
 const STATUSES: ClassSession["status"][] = ["scheduled", "ongoing", "ended", "cancelled"];
 
@@ -26,7 +26,7 @@ export default function LecturerClasses() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { sessions, addSession, updateSessionStatus } = useData();
+  const { sessions, courses, addSession, updateSessionStatus } = useData();
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ course_id: "", date: "", time: "", venue: "" });
@@ -34,7 +34,7 @@ export default function LecturerClasses() {
   const topPad = insets.top;
 
   const mySessions = sessions.filter((s) => s.lecturer_id === user?.id);
-  const myCourses = DEMO_COURSES.filter((c) => c.lecturer_id === user?.id);
+  const myCourses = courses.filter((c) => c.lecturer_id === user?.id);
 
   const handleCreate = async () => {
     if (!form.course_id || !form.date || !form.time || !form.venue) return;
