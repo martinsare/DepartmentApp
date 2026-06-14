@@ -5,7 +5,7 @@ outputs = []
 id = "wX0sW1rWAp-vGNS4arfqE"
 uri = "file://artifacts/department-connect/assets/images/icon.png"
 type = "image"
-title = "generated_image"
+title = "department connect app icon"
 
 [[generated]]
 id = "57tIKHqY8-vhFrMJlLV4E"
@@ -18,3 +18,39 @@ id = "h7GdsLPtqoPjdT13WAgCr"
 uri = "file://artifacts/department-connect/assets/images/qr-scan-bg.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "gGKkOoLwQKRrbjTkWwekp"
+uri = "file://artifacts/department-connect/assets/images/campus-hero.png"
+type = "image"
+title = "university campus hero"
+
+[[generated]]
+id = "UlfmZcvu8pd8slIApwRS3"
+uri = "file://artifacts/department-connect/assets/images/students-studying.png"
+type = "image"
+title = "students studying library"
+
+[[generated]]
+id = "wBK8VkzjMHoQFBf1_GTXX"
+uri = "file://artifacts/department-connect/assets/images/lecturer-teaching.png"
+type = "image"
+title = "lecturer teaching classroom"
+
+[[generated]]
+id = "F_0vyJsc1zSNhuioeI9J8"
+uri = "file://artifacts/department-connect/assets/images/splash-bg.png"
+type = "image"
+title = "splash screen background"
+
+[[generated]]
+id = "XdIrlDh3v6X6_s6hA8L0S"
+uri = "file://artifacts/department-connect/assets/images/logo-mark.png"
+type = "image"
+title = "department connect logo mark"
+
+[[generated]]
+id = "tlCtecAz0JcRBgITdy7jw"
+uri = "file://artifacts/department-connect/assets/images/pattern-bg.png"
+type = "image"
+title = "purple pattern background"

@@ -1,40 +1,69 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { router } from "expo-router";
-import React from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Easing,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
-import { StatsCard } from "@/components/StatsCard";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
+
+const QUICK_ACTIONS = [
+  { label: "Add Student", icon: "user-plus", color: "#7C3AED", route: "/(admin)/accounts" },
+  { label: "Add Lecturer", icon: "briefcase", color: "#10B981", route: "/(admin)/accounts" },
+  { label: "Contribution", icon: "dollar-sign", color: "#F59E0B", route: "/(admin)/contributions" },
+  { label: "Announcement", icon: "bell", color: "#EF4444", route: "/(admin)/announcements" },
+];
 
 export default function AdminDashboard() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
-  const { users, courses, sessions, attendance, contributions, payments, announcements, markAnnouncementRead } = useData();
+  const { users, courses, sessions, contributions, payments, announcements, markAnnouncementRead } = useData();
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
   const students = users.filter((u) => u.role === "student");
   const lecturers = users.filter((u) => u.role === "lecturer");
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0);
   const totalTarget = contributions.reduce((acc, c) => acc + c.target_amount, 0);
+  const collectionPct = totalTarget > 0 ? Math.min((totalPaid / totalTarget) * 100, 100) : 0;
   const recentAnnouncements = announcements.slice(0, 3);
 
-  const QUICK_ACTIONS = [
-    { label: "Add Student", icon: "user-plus", color: colors.primary },
-    { label: "Add Lecturer", icon: "briefcase", color: "#10B981" },
-    { label: "New Contribution", icon: "dollar-sign", color: "#F59E0B" },
-    { label: "Announcement", icon: "bell", color: "#3B82F6" },
-  ];
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(28)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
-  const handleLogout = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await logout();
-    router.replace("/login");
-  };
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+    ]).start();
+    Animated.timing(progressAnim, {
+      toValue: collectionPct,
+      duration: 1100,
+      delay: 350,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, []);
+
+  const STATS = [
+    { label: "Students", value: students.length, icon: "users", color: "#7C3AED" },
+    { label: "Lecturers", value: lecturers.length, icon: "briefcase", color: "#10B981" },
+    { label: "Courses", value: courses.length, icon: "book-open", color: "#3B82F6" },
+    { label: "Sessions", value: sessions.length, icon: "calendar", color: "#F59E0B" },
+  ];
 
   return (
     <ScrollView
@@ -43,32 +72,68 @@ export default function AdminDashboard() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View>
-          <Text style={[styles.role, { color: colors.mutedForeground }]}>Admin</Text>
+          <Text style={[styles.role, { color: colors.mutedForeground }]}>Admin Dashboard</Text>
           <Text style={[styles.name, { color: colors.foreground }]}>{user?.full_name}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={[styles.logoutBtn, { backgroundColor: colors.muted }]}>
+        <TouchableOpacity
+          onPress={async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); await logout(); router.replace("/login"); }}
+          style={[styles.logoutBtn, { backgroundColor: colors.muted }]}
+        >
           <Feather name="log-out" size={18} color={colors.mutedForeground} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <StatsCard label="Students" value={students.length} icon="users" />
-        <StatsCard label="Lecturers" value={lecturers.length} icon="briefcase" color="#10B981" />
-        <StatsCard label="Courses" value={courses.length} icon="book-open" color="#3B82F6" />
-      </View>
-
-      {/* Finance summary */}
-      <View style={[styles.financeCard, { backgroundColor: colors.primary }]}>
-        <Text style={styles.financeLabel}>Total Collected</Text>
-        <Text style={styles.financeValue}>₦{totalPaid.toLocaleString()}</Text>
-        <View style={styles.financeBar}>
-          <View style={[styles.financeFill, { width: `${totalTarget > 0 ? Math.min((totalPaid / totalTarget) * 100, 100) : 0}%` as any }]} />
+      {/* Campus hero image */}
+      <Animated.View style={[{ opacity: fadeAnim }, styles.heroWrap]}>
+        <Image
+          source={require("@/assets/images/campus-hero.png")}
+          style={styles.heroImg}
+          contentFit="cover"
+        />
+        <View style={[styles.heroBadge, { backgroundColor: colors.primary }]}>
+          <Feather name="shield" size={11} color="#fff" />
+          <Text style={styles.heroBadgeText}>Admin Panel</Text>
         </View>
-        <Text style={styles.financeTarget}>Target: ₦{totalTarget.toLocaleString()}</Text>
+      </Animated.View>
+
+      {/* Stats grid */}
+      <View style={styles.statsGrid}>
+        {STATS.map((s, i) => (
+          <Animated.View
+            key={s.label}
+            style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+          >
+            <View style={[styles.statIcon, { backgroundColor: s.color + "18" }]}>
+              <Feather name={s.icon as any} size={18} color={s.color} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.foreground }]}>{s.value}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{s.label}</Text>
+          </Animated.View>
+        ))}
       </View>
+
+      {/* Finance card with animated bar */}
+      <Animated.View style={[styles.financeCard, { backgroundColor: colors.primary, opacity: fadeAnim }]}>
+        <View style={styles.financeHeader}>
+          <View>
+            <Text style={styles.financeLabel}>Total Collected</Text>
+            <Text style={styles.financeValue}>₦{totalPaid.toLocaleString()}</Text>
+            <Text style={styles.financeTarget}>Target: ₦{totalTarget.toLocaleString()}</Text>
+          </View>
+          <View style={[styles.financePctBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+            <Text style={styles.financePctText}>{Math.round(collectionPct)}%</Text>
+          </View>
+        </View>
+        <View style={styles.financeBarBg}>
+          <Animated.View
+            style={[styles.financeBarFill, {
+              width: progressAnim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] }),
+            }]}
+          />
+        </View>
+      </Animated.View>
 
       {/* Quick actions */}
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
@@ -76,8 +141,9 @@ export default function AdminDashboard() {
         {QUICK_ACTIONS.map((action) => (
           <TouchableOpacity
             key={action.label}
-            style={[styles.actionBtn, { backgroundColor: action.color + "15", borderColor: action.color + "30" }]}
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            style={[styles.actionBtn, { backgroundColor: action.color + "12", borderColor: action.color + "28" }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(action.route as any); }}
+            activeOpacity={0.85}
           >
             <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
               <Feather name={action.icon as any} size={18} color="#fff" />
@@ -98,17 +164,32 @@ export default function AdminDashboard() {
 
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   role: { fontSize: 12, fontFamily: "Inter_400Regular" },
   name: { fontSize: 22, fontFamily: "Inter_700Bold" },
   logoutBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  heroWrap: { marginBottom: 20, borderRadius: 18, overflow: "hidden" },
+  heroImg: { width: "100%", height: 130, borderRadius: 18 },
+  heroBadge: {
+    position: "absolute", top: 12, right: 12,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+  },
+  heroBadgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  statCard: { flex: 1, minWidth: "45%", borderWidth: 1, borderRadius: 16, padding: 14, alignItems: "flex-start", gap: 6 },
+  statIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  statValue: { fontSize: 26, fontFamily: "Inter_700Bold" },
+  statLabel: { fontSize: 12, fontFamily: "Inter_400Regular" },
   financeCard: { borderRadius: 20, padding: 20, marginBottom: 24 },
-  financeLabel: { color: "rgba(255,255,255,0.8)", fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 4 },
-  financeValue: { color: "#fff", fontSize: 32, fontFamily: "Inter_700Bold", marginBottom: 10 },
-  financeBar: { height: 6, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 3, overflow: "hidden", marginBottom: 6 },
-  financeFill: { height: "100%", backgroundColor: "#fff", borderRadius: 3 },
-  financeTarget: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular" },
+  financeHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
+  financeLabel: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 2 },
+  financeValue: { color: "#fff", fontSize: 28, fontFamily: "Inter_700Bold" },
+  financeTarget: { color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  financePctBadge: { borderRadius: 50, width: 58, height: 58, alignItems: "center", justifyContent: "center" },
+  financePctText: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
+  financeBarBg: { height: 6, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, overflow: "hidden" },
+  financeBarFill: { height: "100%", backgroundColor: "#fff", borderRadius: 3 },
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 14 },
   actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
   actionBtn: { width: "47%", borderWidth: 1, borderRadius: 16, padding: 14, alignItems: "center", gap: 10 },

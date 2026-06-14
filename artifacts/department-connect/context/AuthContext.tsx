@@ -6,7 +6,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
+  login: (identifier: string, password: string) => Promise<{ error?: string }>;
   loginAsDemo: (userId: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -14,6 +14,16 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = "dc_demo_user_id";
+
+function resolveIdentifier(identifier: string): string | undefined {
+  const lower = identifier.toLowerCase();
+  if (DEMO_CREDENTIALS[lower]) return DEMO_CREDENTIALS[lower];
+  const byMatric = DEMO_USERS.find(
+    (u) => u.matric_number?.toLowerCase() === lower
+  );
+  if (byMatric) return byMatric.id;
+  return undefined;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -54,17 +64,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, _password: string) => {
+  const login = async (identifier: string, _password: string) => {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: identifier,
         password: _password,
       });
       if (error) return { error: error.message };
       return {};
     }
-    const userId = DEMO_CREDENTIALS[email.toLowerCase()];
-    if (!userId) return { error: "Invalid email or password" };
+    const userId = resolveIdentifier(identifier);
+    if (!userId) return { error: "Invalid email, matric number, or password" };
     const found = DEMO_USERS.find((u) => u.id === userId);
     if (!found) return { error: "User not found" };
     await AsyncStorage.setItem(STORAGE_KEY, found.id);
