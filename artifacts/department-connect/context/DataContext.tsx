@@ -32,6 +32,8 @@ interface DataContextValue {
   addCourse: (c: Course) => void;
   updateCourse: (id: string, patch: Partial<Course>) => void;
   addAttendance: (record: AttendanceRecord) => void;
+  approveUser: (userId: string, role: User["role"]) => Promise<void>;
+  rejectUser: (userId: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -168,6 +170,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         level: r.level ?? undefined,
         phone: r.phone ?? undefined,
         avatar_url: r.avatar_url ?? undefined,
+        status: r.status ?? "pending",
       }));
 
       const userMap = buildUserMap(fetchedUsers);
@@ -197,7 +200,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     fetchAll();
 
-    const annChannel = supabase
+    const sb = supabase;
+
+    const annChannel = sb
       .channel("rt-announcements")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "announcements" }, (payload) => {
         const r = payload.new as any;
@@ -225,7 +230,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    const liveChannel = supabase
+    const liveChannel = sb
       .channel("rt-live-status")
       .on("postgres_changes", { event: "*", schema: "public", table: "live_status" }, (payload) => {
         const r = (payload.new ?? payload.old) as any;
@@ -237,7 +242,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    const sessChannel = supabase
+    const sessChannel = sb
       .channel("rt-sessions")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "class_sessions" }, (payload) => {
         const r = payload.new as any;
@@ -248,9 +253,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(annChannel);
-      supabase.removeChannel(liveChannel);
-      supabase.removeChannel(sessChannel);
+      sb.removeChannel(annChannel);
+      sb.removeChannel(liveChannel);
+      sb.removeChannel(sessChannel);
     };
   }, [fetchAll]);
 
@@ -386,6 +391,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const approveUser = useCallback(async (userId: string, role: User["role"]) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, status: "active" as const, role } : u))
+    );
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from("profiles").update({ status: "active", role }).eq("id", userId);
+    }
+  }, []);
+
+  const rejectUser = useCallback(async (userId: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from("profiles").delete().eq("id", userId);
+    }
+  }, []);
+
   return (
     <DataContext.Provider
       value={{
@@ -408,6 +429,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         addCourse,
         updateCourse,
         addAttendance,
+        approveUser,
+        rejectUser,
         refresh: fetchAll,
       }}
     >

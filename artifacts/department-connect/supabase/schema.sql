@@ -5,16 +5,18 @@
 
 -- ── profiles ──────────────────────────────────────────────
 create table if not exists profiles (
-  id           text primary key,
-  role         text not null check (role in ('admin','lecturer','student')),
-  full_name    text not null,
-  email        text unique not null,
+  id            text primary key,
+  role          text not null check (role in ('admin','lecturer','student')),
+  full_name     text not null,
+  email         text unique not null,
   matric_number text,
   department_id text not null default 'dept-001',
-  level        text,
-  phone        text,
-  avatar_url   text,
-  created_at   timestamptz default now()
+  level         text,
+  phone         text,
+  avatar_url    text,
+  status        text not null default 'pending'
+                check (status in ('pending','active','suspended')),
+  created_at    timestamptz default now()
 );
 
 -- ── courses ───────────────────────────────────────────────

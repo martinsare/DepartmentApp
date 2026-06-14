@@ -42,6 +42,7 @@ async function fetchProfile(email: string): Promise<User | null> {
     level: data.level ?? undefined,
     phone: data.phone ?? undefined,
     avatar_url: data.avatar_url ?? undefined,
+    status: data.status ?? "pending",
   };
 }
 
@@ -101,6 +102,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.user?.email) {
       const profile = await fetchProfile(data.user.email);
       if (profile) {
+        if (profile.status === "pending") {
+          await supabase.auth.signOut();
+          return { error: "Your account is pending approval from your department admin. You will be notified once approved." };
+        }
+        if (profile.status === "suspended") {
+          await supabase.auth.signOut();
+          return { error: "Your account has been suspended. Please contact your department admin." };
+        }
         setUser(profile);
         return { role: profile.role };
       }

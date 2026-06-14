@@ -75,21 +75,28 @@ export default function SignupScreen() {
   if (done) {
     return (
       <View style={[styles.doneWrap, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <View style={[styles.doneIcon, { backgroundColor: "#D1FAE5" }]}>
-          <Feather name="mail" size={36} color="#059669" />
+        <View style={[styles.doneIcon, { backgroundColor: "#EDE9FE" }]}>
+          <Feather name="clock" size={36} color="#7C3AED" />
         </View>
-        <Text style={[styles.doneTitle, { color: colors.foreground }]}>Check your email</Text>
+        <Text style={[styles.doneTitle, { color: colors.foreground }]}>Account Submitted</Text>
         <Text style={[styles.doneSub, { color: colors.mutedForeground }]}>
-          We sent a verification link to{"\n"}
-          <Text style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}>{email}</Text>
-          {"\n\n"}Verify your email, then come back to sign in.
+          Your account is pending review.{"\n\n"}
+          Your department admin will verify your details and approve your access. You'll be able to sign in once approved.
         </Text>
+        <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Feather name="mail" size={15} color={colors.primary} />
+          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+            Also check{" "}
+            <Text style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}>{email}</Text>
+            {" "}for a verification link from Supabase.
+          </Text>
+        </View>
         <TouchableOpacity
           style={[styles.doneBtn, { backgroundColor: colors.primary }]}
           onPress={() => router.replace("/login")}
           activeOpacity={0.85}
         >
-          <Text style={styles.doneBtnText}>Go to Sign In</Text>
+          <Text style={styles.doneBtnText}>Back to Sign In</Text>
         </TouchableOpacity>
       </View>
     );
@@ -398,6 +405,17 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 36,
   },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 24,
+    width: "100%",
+  },
+  infoText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
   doneBtn: {
     width: "100%",
     paddingVertical: 17,

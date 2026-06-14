@@ -1,5 +1,7 @@
 export type UserRole = "admin" | "lecturer" | "student";
 
+export type UserStatus = "pending" | "active" | "suspended";
+
 export interface User {
   id: string;
   role: UserRole;
@@ -10,6 +12,7 @@ export interface User {
   avatar_url?: string;
   level?: string;
   phone?: string;
+  status?: UserStatus;
 }
 
 export interface Course {
