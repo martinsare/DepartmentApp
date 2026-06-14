@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -258,20 +257,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Onboarding reset — useful for demos and new installs */}
-        <Animated.View style={[{ alignItems: "center", paddingTop: 8, paddingBottom: 4 }, { opacity: formOpacity }]}>
-          <TouchableOpacity
-            onPress={async () => {
-              await AsyncStorage.removeItem("dc_onboarded");
-              router.replace("/onboarding");
-            }}
-            activeOpacity={0.6}
-          >
-            <Text style={[styles.onboardingResetText, { color: colors.mutedForeground }]}>
-              View intro again
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -355,5 +340,4 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   signupBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  onboardingResetText: { fontSize: 12, fontFamily: "Inter_400Regular", textDecorationLine: "underline" },
 });
