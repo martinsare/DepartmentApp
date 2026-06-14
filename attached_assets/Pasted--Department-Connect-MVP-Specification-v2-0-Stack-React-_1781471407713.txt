@@ -1,0 +1,476 @@
+# Department Connect — MVP Specification v2.0
+**Stack: React Native (Expo) + Supabase**
+
+---
+
+## Overview
+
+Department Connect is a mobile application enabling lecturers, department admins, and students to communicate in real time around lectures, attendance, announcements, and departmental contributions.
+
+**Goals:**
+- Eliminate uncertainty around class schedules and venue changes
+- Digitise attendance tracking via QR code
+- Centralise departmental announcements
+- Manage and track student contribution payments
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React Native (Expo) |
+| Backend | Supabase (PostgreSQL + Edge Functions) |
+| Authentication | Supabase Auth (email/password + matric number lookup) |
+| Database | Supabase PostgreSQL |
+| Real-time | Supabase Realtime (subscriptions) |
+| File Storage | Supabase Storage |
+| Push Notifications | Expo Notifications + Supabase Edge Functions |
+| Payments | Paystack API (via Supabase Edge Function) |
+| QR Code | `react-native-qrcode-svg` (generate) + `expo-camera` (scan) |
+
+---
+
+## User Roles
+
+| Role | Description |
+|---|---|
+| Department Admin | Full control — accounts, courses, contributions, analytics |
+| Lecturer | Manage own classes, attendance, announcements |
+| Student | View classes, attendance, pay contributions |
+
+---
+
+## Supabase Database Schema (Core Tables)
+
+```sql
+-- Profiles (linked to Supabase Auth)
+profiles (id, role, full_name, email, matric_number, department_id, avatar_url, created_at)
+
+-- Courses
+courses (id, title, code, lecturer_id, department_id, created_at)
+
+-- Class Sessions
+class_sessions (id, course_id, lecturer_id, date, time, venue, status, created_at)
+-- status: 'scheduled' | 'ongoing' | 'cancelled' | 'ended'
+
+-- Live Class Status
+live_status (id, session_id, status, updated_at)
+-- status: 'lecturer_arrived' | 'class_started' | 'entry_open' | 'entry_closing' | 'entry_closed' | 'class_ended'
+
+-- Attendance
+attendance (id, session_id, student_id, matric_number, time_recorded, created_at)
+
+-- QR Tokens (short-lived, for attendance)
+qr_tokens (id, session_id, token, expires_at, created_at)
+
+-- Announcements
+announcements (id, author_id, role, title, body, department_id, created_at)
+
+-- Contributions
+contributions (id, title, description, target_amount, amount_per_student, deadline, department_id, created_by, created_at)
+
+-- Payments
+payments (id, contribution_id, student_id, transaction_id, amount, status, receipt_url, created_at)
+-- status: 'paid' | 'pending' | 'failed'
+
+-- Notifications Log
+notifications (id, user_id, title, body, type, read, created_at)
+```
+
+---
+
+## MODULE 1 — Authentication & Onboarding
+
+### Admin Creates Accounts
+- Admin creates lecturer and student accounts from the dashboard
+- Credentials are emailed to the user via Supabase Auth invite
+- Students log in with email **or** matric number + password
+
+### Auth Flow
+1. Splash screen → Login screen
+2. User enters email (or matric number) + password
+3. Supabase Auth validates → fetches profile → routes to role-specific dashboard
+4. "Forgot password" triggers Supabase password reset email
+
+### Role-Based Navigation
+- Admin → Admin Dashboard
+- Lecturer → Lecturer Dashboard
+- Student → Student Dashboard
+
+---
+
+## MODULE 2 — Class Management
+
+### Lecturer Actions
+Lecturers can create and manage class sessions for their assigned courses.
+
+**Create/Edit Class Session Fields:**
+- Course (dropdown — assigned courses only)
+- Date (date picker)
+- Time (time picker)
+- Venue (text input)
+- Status (auto-set to `Scheduled` on creation)
+
+**Lecturer can update status to:**
+- Scheduled → Ongoing → Ended
+- Cancelled (at any point before Ended)
+- Venue Changed (triggers notification)
+
+### Student View
+- **Today's Classes** tab — sessions for the current date
+- **Upcoming Classes** tab — future sessions
+- Each card shows: Course, Code, Lecturer, Time, Venue, Status badge
+
+### Push Notifications Triggered
+| Event | Notification |
+|---|---|
+| Class scheduled | "New class added: [Course] on [Date]" |
+| Class cancelled | "[Course] on [Date] has been cancelled" |
+| Venue changed | "[Course] venue updated to [New Venue]" |
+| Class started | "[Course] has started" |
+| Class ended | "[Course] has ended" |
+
+Notifications are sent via **Supabase Edge Function** calling the **Expo Push Notifications API**.
+
+---
+
+## MODULE 3 — Live Class Status
+
+### Lecturer Controls
+Lecturer taps status buttons in sequence during a session:
+
+```
+[Arrived] → [Class Started] → [Entry Open] → [Entry Closing Soon] → [Entry Closed] → [Class Ended]
+```
+
+These update the `live_status` table in Supabase.
+
+### Student Real-Time View
+Students see live status via **Supabase Realtime** subscription on `live_status`.
+
+| Status | Indicator |
+|---|---|
+| Lecturer Present | 🟢 Lecturer Present |
+| Entry Open | 🟢 Entry Open |
+| Entry Closing Soon | 🟡 Entry Closing Soon |
+| Entry Closed | 🔴 Entry Closed |
+| Class Ended | ⚫ Class Ended |
+
+No page refresh required — updates appear instantly.
+
+---
+
+## MODULE 4 — Attendance (QR Code)
+
+### Flow
+
+**Lecturer side:**
+1. Opens a class session → taps "Start Attendance"
+2. Supabase Edge Function generates a signed QR token (expires in 15 minutes) and stores it in `qr_tokens`
+3. QR code is displayed on lecturer's screen using `react-native-qrcode-svg`
+4. Lecturer can tap "Close Attendance" to expire the token early
+
+**Student side:**
+1. Student opens "Scan Attendance" screen
+2. Camera opens using `expo-camera`
+3. Student scans QR code
+4. App sends token + student ID to Supabase Edge Function
+5. Edge Function validates token (not expired, correct session) and inserts record into `attendance` table
+6. Student sees ✅ "Attendance Recorded"
+
+### Attendance Record Fields
+- Student Name
+- Matric Number
+- Course
+- Session Date
+- Time Recorded
+
+### Lecturer Attendance View
+- List of students who attended a session
+- Count: Present / Total Enrolled
+- Export to CSV (Phase 2)
+
+### Student Attendance View
+- Per-course attendance history
+- Sessions attended vs total sessions
+
+---
+
+## MODULE 5 — Announcements
+
+### Who Can Post
+- Lecturers (course-level or department-wide)
+- Admins (department-wide)
+
+### Announcement Fields
+- Title
+- Body
+- Type: `General` | `Assignment` | `Test` | `Emergency`
+- Audience: Department-wide or specific course
+
+### Student View
+- Feed of announcements sorted by recency
+- Badge for unread announcements
+- Push notification on new announcement
+
+### Emergency Announcements
+- Marked with 🚨 badge
+- Push notification sent immediately regardless of notification settings
+
+---
+
+## MODULE 6 — Contributions
+
+### Admin Creates a Contribution
+
+**Fields:**
+- Title (e.g. "Departmental Dues")
+- Description
+- Target Amount (e.g. ₦500,000)
+- Amount Per Student (e.g. ₦2,000)
+- Deadline
+
+### Student Contribution Dashboard
+
+Displays:
+- Total Target
+- Amount Raised (progress bar)
+- Remaining Amount
+- Deadline countdown
+- Your payment status: **Paid** / **Pending** / **Outstanding**
+
+**Statistics (visible to all students):**
+- Students Paid
+- Students Outstanding
+- Total Students
+
+---
+
+## MODULE 7 — Payments (Paystack)
+
+### Flow
+1. Student taps "Pay Now" on a contribution
+2. App calls Supabase Edge Function to initialise a Paystack transaction
+3. Edge Function returns a Paystack payment URL
+4. App opens Paystack checkout (WebView or `expo-web-browser`)
+5. On success, Paystack webhook hits Supabase Edge Function
+6. Edge Function verifies transaction → updates `payments` record to `paid` → generates receipt
+7. Student sees updated status + receipt available
+
+### Payment Record Fields
+- Transaction ID
+- Amount
+- Date
+- Status: `Paid` | `Pending` | `Failed`
+- Receipt (PDF or in-app view)
+
+### Security
+- Paystack secret key stored in **Supabase Vault** (never in client code)
+- All payment logic runs in Edge Functions only
+
+---
+
+## SECTION A — ADMIN PANEL (Detailed)
+
+The Admin panel is accessible only to users with `role = 'admin'` in the `profiles` table. Supabase Row Level Security (RLS) enforces this.
+
+### A1 — Dashboard
+Displays summary cards:
+- Total Students
+- Total Lecturers
+- Total Courses
+- Attendance Rate (this week)
+- Total Contributions Collected vs Target
+
+Quick action buttons:
+- + Add Student
+- + Add Lecturer
+- + New Contribution
+- + New Announcement
+
+### A2 — Account Management
+
+**Create Lecturer Account**
+- Full Name
+- Email (Supabase Auth invite sent)
+- Assigned Courses (multi-select)
+- Phone Number (optional)
+
+**Create Student Account**
+- Full Name
+- Email
+- Matric Number
+- Level (100L – 500L)
+- Phone Number (optional)
+
+**Manage Accounts**
+- View all lecturers and students in a searchable list
+- Deactivate / reactivate accounts
+- Reset password (triggers Supabase password reset email)
+- Edit profile details
+
+### A3 — Course Management
+- Create courses (Title, Code, assign Lecturer)
+- Edit or deactivate courses
+- View enrolled students per course
+
+### A4 — Announcements
+- Post department-wide announcements
+- Post emergency announcements (push sent to all)
+- View history of all announcements
+
+### A5 — Contributions Management
+- Create new contributions
+- View per-contribution payment progress
+- See which students have paid / not paid
+- Send reminder push notification to outstanding students
+- View full payment history per contribution
+
+### A6 — Analytics
+- Attendance rate by course, by week, by level
+- Contribution collection rate
+- Active vs inactive students
+- Most/least attended courses
+
+---
+
+## SECTION B — STUDENT SECTION (Detailed)
+
+The student experience is read-heavy with key interactive features: QR scan, payments, and notifications.
+
+### B1 — Student Dashboard (Home Screen)
+
+On login, students land on the dashboard showing:
+
+**Next Class card** — Next upcoming session with course, time, venue, status badge
+
+**Ongoing Class card** — If a class is currently live, shows real-time status
+
+**Attendance Summary** — Mini chart showing overall attendance percentage across all courses
+
+**Outstanding Contributions** — Any unpaid contributions with deadline shown
+
+**Recent Announcements** — Last 3 announcements with unread badge
+
+### B2 — Classes Screen
+
+Two tabs:
+- **Today** — All sessions scheduled for today
+- **Upcoming** — All future sessions
+
+Each class card shows:
+- Course title + code
+- Lecturer name
+- Date & Time
+- Venue
+- Status badge (colour-coded)
+
+Tapping a card opens the class detail screen with:
+- Full details
+- Live status (real-time, via Supabase Realtime)
+- "Scan Attendance" button (only visible when entry is open)
+
+### B3 — Attendance Screen
+
+- List of all courses the student is enrolled in
+- Tap a course → see attendance history for that course
+- Each row: Session date, time recorded, status (Present/Absent)
+- Overall attendance % per course shown at the top
+
+### B4 — Announcements Screen
+
+- Full feed of department-wide and course-level announcements
+- Filter by type: All | General | Assignment | Test | Emergency
+- Unread announcements shown with a blue dot
+- Tapping marks as read
+- Emergency announcements pinned at top with 🚨
+
+### B5 — Contributions Screen
+
+- List of all active contributions
+- Each contribution card shows:
+  - Title
+  - Your status: Paid ✅ / Outstanding ❗
+  - Deadline
+  - Department progress bar
+
+Tapping opens Contribution Detail:
+- Description
+- Target Amount
+- Amount Per Student
+- Deadline
+- Department-wide stats (paid/outstanding/total)
+- "Pay Now" button (if outstanding)
+- Receipt download (if paid)
+
+### B6 — Profile Screen
+
+- View name, matric number, level, email
+- Change password
+- Notification preferences (toggle per category)
+- Log out
+
+---
+
+## Supabase Row Level Security (RLS) Summary
+
+| Table | Admin | Lecturer | Student |
+|---|---|---|---|
+| profiles | Full access | Own profile | Own profile |
+| courses | Full access | Own courses | Read only |
+| class_sessions | Full access | Own sessions | Read only |
+| live_status | Full access | Own sessions | Read only |
+| attendance | Full access | Own sessions | Own records |
+| announcements | Full access | Insert + own | Read only |
+| contributions | Full access | Read only | Read only |
+| payments | Full access | Read only | Own records |
+
+---
+
+## Supabase Edge Functions List
+
+| Function | Purpose |
+|---|---|
+| `create-user` | Admin creates lecturer/student via Supabase Auth Admin API |
+| `generate-qr-token` | Creates short-lived QR token for attendance session |
+| `validate-qr-scan` | Validates scan, records attendance |
+| `init-paystack-payment` | Initialises Paystack transaction |
+| `paystack-webhook` | Receives Paystack webhook, verifies + updates payment |
+| `send-push-notification` | Sends Expo push notification to target users |
+| `contribution-reminder` | Scheduled function — sends reminders before deadline |
+
+---
+
+## Notifications Summary
+
+| Trigger | Audience |
+|---|---|
+| New class scheduled | All enrolled students |
+| Class cancelled | Enrolled students |
+| Venue changed | Enrolled students |
+| Lecturer arrived | Enrolled students |
+| Class started | Enrolled students |
+| Attendance open | Enrolled students |
+| New announcement | Department / course audience |
+| Contribution deadline (3 days) | Outstanding students |
+| Payment confirmed | Paying student |
+
+---
+
+## Phase 2 Features (Post-MVP)
+
+- GPS-based attendance verification
+- Student timetable auto-generation
+- Assignment submission and grading
+- Result checker
+- Department election voting
+- AI assistant (course Q&A)
+- In-app chat (lecturer ↔ students)
+- Classroom occupancy tracking
+- Financial transparency reports (public contribution ledger)
+- Parent/guardian read-only access
+
+---
+
+*Department Connect MVP v2.0 — React Native (Expo) + Supabase*

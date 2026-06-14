@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Department Connect"
+version = "1.0.0"
+id = "artifacts/department-connect"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 18351
+
+[services.development]
+run = "pnpm --filter @workspace/department-connect run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/department-connect", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/department-connect", "run", "serve" ]
+
+[services.env]
+PORT = "18351"
+BASE_PATH = "/"

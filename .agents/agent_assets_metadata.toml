@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "wX0sW1rWAp-vGNS4arfqE"
+uri = "file://artifacts/department-connect/assets/images/icon.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "57tIKHqY8-vhFrMJlLV4E"
+uri = "file://artifacts/department-connect/assets/images/banner.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "h7GdsLPtqoPjdT13WAgCr"
+uri = "file://artifacts/department-connect/assets/images/qr-scan-bg.png"
+type = "image"
+title = "generated_image"
