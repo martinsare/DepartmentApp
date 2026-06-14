@@ -26,7 +26,7 @@ export default function StudentContributions() {
   const { contributions, payments, addPayment } = useData();
   const [payingId, setPayingId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const isPaid = (contribId: string) =>
     payments.some(

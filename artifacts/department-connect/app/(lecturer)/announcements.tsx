@@ -29,7 +29,7 @@ export default function LecturerAnnouncements() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", body: "", type: "general" as Announcement["type"] });
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const myAnnouncements = announcements.filter((a) => a.author_id === user?.id);
 

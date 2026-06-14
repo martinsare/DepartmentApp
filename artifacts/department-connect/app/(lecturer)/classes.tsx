@@ -29,7 +29,7 @@ export default function LecturerClasses() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ course_id: "", date: "", time: "", venue: "" });
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const mySessions = sessions.filter((s) => s.lecturer_id === user?.id);
   const myCourses = DEMO_COURSES.filter((c) => c.lecturer_id === user?.id);

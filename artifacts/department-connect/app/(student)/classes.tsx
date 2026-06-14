@@ -12,7 +12,7 @@ export default function StudentClasses() {
   const insets = useSafeAreaInsets();
   const { sessions, liveStatus } = useData();
   const [tab, setTab] = useState<"today" | "upcoming">("today");
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const todayStr = new Date().toISOString().split("T")[0]!;
   const todaySessions = sessions.filter((s) => s.date === todayStr);

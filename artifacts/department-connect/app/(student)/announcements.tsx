@@ -15,7 +15,7 @@ export default function StudentAnnouncements() {
   const insets = useSafeAreaInsets();
   const { announcements, markAnnouncementRead } = useData();
   const [filter, setFilter] = useState<Filter>("all");
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const filtered =
     filter === "all" ? announcements : announcements.filter((a) => a.type === filter);

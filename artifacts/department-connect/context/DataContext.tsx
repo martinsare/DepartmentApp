@@ -33,15 +33,19 @@ interface DataContextValue {
   addSession: (session: ClassSession) => void;
   addAnnouncement: (ann: Announcement) => void;
   addPayment: (payment: Payment) => void;
+  addContribution: (c: Contribution) => void;
+  addCourse: (c: Course) => void;
+  updateCourse: (id: string, patch: Partial<Course>) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [sessions, setSessions] = useState<ClassSession[]>(DEMO_SESSIONS);
+  const [courses, setCourses] = useState<Course[]>(DEMO_COURSES);
   const [announcements, setAnnouncements] =
     useState<Announcement[]>(DEMO_ANNOUNCEMENTS);
-  const [contributions] = useState<Contribution[]>(DEMO_CONTRIBUTIONS);
+  const [contributions, setContributions] = useState<Contribution[]>(DEMO_CONTRIBUTIONS);
   const [payments, setPayments] = useState<Payment[]>(DEMO_PAYMENTS);
   const [attendance] = useState<AttendanceRecord[]>(DEMO_ATTENDANCE);
   const [liveStatus, setLiveStatus] =
@@ -81,11 +85,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setPayments((prev) => [payment, ...prev]);
   };
 
+  const addContribution = (c: Contribution) =>
+    setContributions((prev) => [c, ...prev]);
+
+  const addCourse = (c: Course) =>
+    setCourses((prev) => [c, ...prev]);
+
+  const updateCourse = (id: string, patch: Partial<Course>) =>
+    setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+
   return (
     <DataContext.Provider
       value={{
         sessions,
-        courses: DEMO_COURSES,
+        courses,
         announcements,
         contributions,
         payments,
@@ -98,6 +111,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         addSession,
         addAnnouncement,
         addPayment,
+        addContribution,
+        addCourse,
+        updateCourse,
       }}
     >
       {children}

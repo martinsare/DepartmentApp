@@ -40,7 +40,7 @@ export default function StudentDashboard() {
   const firstName = user?.full_name?.split(" ")[0] ?? "Student";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -49,15 +49,15 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
 
     if (ongoingSession) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.4, duration: 700, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== "web" }),
-          Animated.timing(pulseAnim, { toValue: 0.7, duration: 700, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== "web" }),
+          Animated.timing(pulseAnim, { toValue: 1.4, duration: 700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0.7, duration: 700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
         ])
       ).start();
     }

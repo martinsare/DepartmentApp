@@ -24,7 +24,7 @@ export default function StudentAttendance() {
   const { attendance, sessions } = useData();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<"success" | "error" | null>(null);
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const myAttendance = attendance.filter((a) => a.student_id === user?.id);
   const totalSessions = sessions.filter(

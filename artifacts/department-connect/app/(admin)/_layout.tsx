@@ -38,6 +38,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="courses" options={{ title: "Courses", tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} /> }} />
       <Tabs.Screen name="contributions" options={{ title: "Finance", tabBarIcon: ({ color }) => <Feather name="dollar-sign" size={22} color={color} /> }} />
       <Tabs.Screen name="analytics" options={{ title: "Analytics", tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} /> }} />
+      <Tabs.Screen name="announcements" options={{ title: "Notices", tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
     </Tabs>
   );
 }

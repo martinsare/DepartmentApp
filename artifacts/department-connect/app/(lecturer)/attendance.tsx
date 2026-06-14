@@ -33,7 +33,7 @@ export default function LecturerAttendance() {
   const { sessions, attendance, liveStatus, updateLiveStatus } = useData();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const mySessions = sessions.filter(
     (s) =>

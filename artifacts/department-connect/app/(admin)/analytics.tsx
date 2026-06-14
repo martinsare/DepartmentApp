@@ -9,7 +9,7 @@ export default function AdminAnalytics() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { courses, sessions, attendance, users, payments, contributions } = useData();
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const students = users.filter((u) => u.role === "student");
   const totalSessions = sessions.filter((s) => s.status === "ended" || s.status === "ongoing").length;

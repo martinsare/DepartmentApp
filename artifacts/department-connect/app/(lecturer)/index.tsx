@@ -24,7 +24,7 @@ export default function LecturerDashboard() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { sessions, attendance, courses } = useData();
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const myCourses = courses.filter((c) => c.lecturer_id === user?.id);
   const mySessions = sessions.filter((s) => s.lecturer_id === user?.id);
@@ -44,8 +44,8 @@ export default function LecturerDashboard() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -130,9 +130,11 @@ export default function LecturerDashboard() {
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>My Courses</Text>
         </View>
         {myCourses.map((course) => (
-          <View
+          <TouchableOpacity
             key={course.id}
             style={[styles.courseRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(lecturer)/classes"); }}
+            activeOpacity={0.85}
           >
             <View style={[styles.courseIcon, { backgroundColor: colors.secondary }]}>
               <Feather name="book" size={18} color={colors.primary} />
@@ -149,7 +151,7 @@ export default function LecturerDashboard() {
             <View style={[styles.courseBadge, { backgroundColor: colors.secondary }]}>
               <Feather name="chevron-right" size={16} color={colors.primary} />
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </ScrollView>

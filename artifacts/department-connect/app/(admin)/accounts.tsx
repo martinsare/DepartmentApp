@@ -40,7 +40,7 @@ export default function AdminAccounts() {
   const [form, setForm] = useState({ full_name: "", email: "", matric_number: "", level: "200L", phone: "" });
   const [saving, setSaving] = useState(false);
   const [localUsers, setLocalUsers] = useState<User[]>(users);
-  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = insets.top;
 
   const filtered = localUsers.filter((u) => {
     const matchesRole = roleFilter === "all" || u.role === roleFilter;
