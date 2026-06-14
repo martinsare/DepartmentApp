@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
+import { AnnouncementDetailModal } from "@/components/AnnouncementDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
@@ -37,6 +38,7 @@ export default function AdminAnnouncements() {
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [form, setForm] = useState({ title: "", body: "", type: "general" as Announcement["type"] });
+  const [selectedAnn, setSelectedAnn] = useState<Announcement | null>(null);
 
   const filtered = filter === "all" ? announcements : announcements.filter((a) => a.type === filter);
   const unreadCount = announcements.filter((a) => !a.read).length;
@@ -109,10 +111,16 @@ export default function AdminAnnouncements() {
           </View>
         ) : (
           filtered.map((ann) => (
-            <AnnouncementCard key={ann.id} announcement={ann} onPress={() => markAnnouncementRead(ann.id)} />
+            <AnnouncementCard
+              key={ann.id}
+              announcement={ann}
+              onPress={() => { markAnnouncementRead(ann.id); setSelectedAnn(ann); }}
+            />
           ))
         )}
       </ScrollView>
+
+      <AnnouncementDetailModal announcement={selectedAnn} onClose={() => setSelectedAnn(null)} />
 
       {/* Create modal */}
       <Modal visible={modalOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalOpen(false)}>

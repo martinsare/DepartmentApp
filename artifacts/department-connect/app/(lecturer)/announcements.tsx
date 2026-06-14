@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
+import { AnnouncementDetailModal } from "@/components/AnnouncementDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
@@ -25,10 +26,11 @@ export default function LecturerAnnouncements() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { announcements, addAnnouncement } = useData();
+  const { announcements, addAnnouncement, markAnnouncementRead } = useData();
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", body: "", type: "general" as Announcement["type"] });
+  const [selectedAnn, setSelectedAnn] = useState<Announcement | null>(null);
   const topPad = insets.top;
 
   const myAnnouncements = announcements.filter((a) => a.author_id === user?.id);
@@ -78,9 +80,17 @@ export default function LecturerAnnouncements() {
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No announcements posted</Text>
           </View>
         ) : (
-          myAnnouncements.map((ann) => <AnnouncementCard key={ann.id} announcement={ann} />)
+          myAnnouncements.map((ann) => (
+            <AnnouncementCard
+              key={ann.id}
+              announcement={ann}
+              onPress={() => { markAnnouncementRead(ann.id); setSelectedAnn(ann); }}
+            />
+          ))
         )}
       </ScrollView>
+
+      <AnnouncementDetailModal announcement={selectedAnn} onClose={() => setSelectedAnn(null)} />
 
       <Modal visible={modalOpen} transparent animationType="slide">
         <View style={styles.overlay}>

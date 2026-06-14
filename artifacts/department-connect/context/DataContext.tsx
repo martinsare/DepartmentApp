@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
+import { scheduleAnnouncementNotification } from "@/lib/notifications";
 import {
   Announcement,
   AttendanceRecord,
@@ -79,6 +80,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const addAnnouncement = (ann: Announcement) => {
     setAnnouncements((prev) => [ann, ...prev]);
+    scheduleAnnouncementNotification(ann.title, ann.body);
   };
 
   const addPayment = (payment: Payment) => {

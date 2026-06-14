@@ -1,30 +1,29 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClassCard } from "@/components/ClassCard";
+import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { LiveStatusBadge } from "@/components/LiveStatusBadge";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
+import { ClassSession } from "@/lib/demoData";
 
 export default function StudentClasses() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { sessions, liveStatus } = useData();
   const [tab, setTab] = useState<"today" | "upcoming">("today");
-  const topPad = insets.top;
+  const [selected, setSelected] = useState<ClassSession | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0]!;
   const todaySessions = sessions.filter((s) => s.date === todayStr);
-  const upcomingSessions = sessions.filter(
-    (s) => s.date > todayStr && s.status !== "cancelled"
-  );
-
+  const upcomingSessions = sessions.filter((s) => s.date > todayStr && s.status !== "cancelled");
   const displaySessions = tab === "today" ? todaySessions : upcomingSessions;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: colors.background }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Classes</Text>
         <View style={[styles.tabs, { backgroundColor: colors.muted }]}>
           {(["today", "upcoming"] as const).map((t) => (
@@ -60,11 +59,13 @@ export default function StudentClasses() {
                   <LiveStatusBadge status={liveStatus[s.id]!.status} />
                 </View>
               )}
-              <ClassCard session={s} />
+              <ClassCard session={s} onPress={() => setSelected(s)} />
             </View>
           ))
         )}
       </ScrollView>
+
+      <ClassDetailModal session={selected} onClose={() => setSelected(null)} userRole="student" />
     </View>
   );
 }

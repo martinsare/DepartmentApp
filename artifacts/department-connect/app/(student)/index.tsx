@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -14,7 +14,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
+import { AnnouncementDetailModal } from "@/components/AnnouncementDetailModal";
 import { ClassCard } from "@/components/ClassCard";
+import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { LiveStatusBadge } from "@/components/LiveStatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -25,6 +27,8 @@ export default function StudentDashboard() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { sessions, announcements, contributions, payments, liveStatus, markAnnouncementRead } = useData();
+  const [selectedAnn, setSelectedAnn] = useState<(typeof announcements)[0] | null>(null);
+  const [selectedClass, setSelectedClass] = useState<(typeof sessions)[0] | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0]!;
   const todaySessions = sessions.filter(
@@ -163,7 +167,9 @@ export default function StudentDashboard() {
       {todaySessions.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Today's Classes</Text>
-          {todaySessions.map((s) => <ClassCard key={s.id} session={s} />)}
+          {todaySessions.map((s) => (
+            <ClassCard key={s.id} session={s} onPress={() => setSelectedClass(s)} />
+          ))}
         </View>
       )}
 
@@ -176,9 +182,16 @@ export default function StudentDashboard() {
           </TouchableOpacity>
         </View>
         {recentAnnouncements.map((ann) => (
-          <AnnouncementCard key={ann.id} announcement={ann} onPress={() => markAnnouncementRead(ann.id)} />
+          <AnnouncementCard
+            key={ann.id}
+            announcement={ann}
+            onPress={() => { markAnnouncementRead(ann.id); setSelectedAnn(ann); }}
+          />
         ))}
       </View>
+
+      <AnnouncementDetailModal announcement={selectedAnn} onClose={() => setSelectedAnn(null)} />
+      <ClassDetailModal session={selectedClass} onClose={() => setSelectedClass(null)} userRole="student" />
     </ScrollView>
   );
 }

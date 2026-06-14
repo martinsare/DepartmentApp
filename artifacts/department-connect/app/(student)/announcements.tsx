@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
+import { AnnouncementDetailModal } from "@/components/AnnouncementDetailModal";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
 import { Announcement } from "@/lib/demoData";
@@ -15,19 +16,23 @@ export default function StudentAnnouncements() {
   const insets = useSafeAreaInsets();
   const { announcements, markAnnouncementRead } = useData();
   const [filter, setFilter] = useState<Filter>("all");
-  const topPad = insets.top;
+  const [selected, setSelected] = useState<Announcement | null>(null);
 
   const filtered =
     filter === "all" ? announcements : announcements.filter((a) => a.type === filter);
 
   const unreadCount = announcements.filter((a) => !a.read).length;
-
   const emergencies = filtered.filter((a) => a.type === "emergency");
   const rest = filtered.filter((a) => a.type !== "emergency");
 
+  const handlePress = (ann: Announcement) => {
+    markAnnouncementRead(ann.id);
+    setSelected(ann);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: colors.background }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: colors.foreground }]}>Announcements</Text>
           {unreadCount > 0 && (
@@ -48,9 +53,7 @@ export default function StudentAnnouncements() {
               ]}
               onPress={() => setFilter(f)}
             >
-              <Text
-                style={[styles.filterText, { color: filter === f ? "#fff" : colors.mutedForeground }]}
-              >
+              <Text style={[styles.filterText, { color: filter === f ? "#fff" : colors.mutedForeground }]}>
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -70,14 +73,16 @@ export default function StudentAnnouncements() {
         ) : (
           <>
             {emergencies.map((ann) => (
-              <AnnouncementCard key={ann.id} announcement={ann} onPress={() => markAnnouncementRead(ann.id)} />
+              <AnnouncementCard key={ann.id} announcement={ann} onPress={() => handlePress(ann)} />
             ))}
             {rest.map((ann) => (
-              <AnnouncementCard key={ann.id} announcement={ann} onPress={() => markAnnouncementRead(ann.id)} />
+              <AnnouncementCard key={ann.id} announcement={ann} onPress={() => handlePress(ann)} />
             ))}
           </>
         )}
       </ScrollView>
+
+      <AnnouncementDetailModal announcement={selected} onClose={() => setSelected(null)} />
     </View>
   );
 }
