@@ -15,13 +15,12 @@ import { QRScanner } from "@/components/QRScanner";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { DEMO_COURSES } from "@/lib/demoData";
 
 export default function StudentAttendance() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { attendance, sessions } = useData();
+  const { attendance, sessions, courses, addAttendance } = useData();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<"success" | "error" | null>(null);
   const topPad = insets.top;
@@ -37,14 +36,34 @@ export default function StudentAttendance() {
     setScannerOpen(true);
   };
 
-  const handleScanned = (_data: string) => {
+  const handleScanned = (data: string) => {
     setScannerOpen(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setScanResult("success");
+    try {
+      const parsed = JSON.parse(data) as { session_id?: string; token?: string };
+      const session = sessions.find((s) => s.id === parsed.session_id);
+      if (!session || !user) throw new Error("invalid");
+      const now = new Date();
+      const record = {
+        id: `att-${Date.now()}`,
+        session_id: session.id,
+        student_id: user.id,
+        student_name: user.full_name,
+        matric_number: user.matric_number ?? "",
+        time_recorded: `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`,
+        course_title: session.course_title,
+        session_date: session.date,
+      };
+      addAttendance(record);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setScanResult("success");
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setScanResult("error");
+    }
     setTimeout(() => setScanResult(null), 3000);
   };
 
-  const courseAttendance = DEMO_COURSES.map((course) => {
+  const courseAttendance = courses.map((course) => {
     const courseSessions = sessions.filter((s) => s.course_id === course.id);
     const attended = myAttendance.filter((a) =>
       courseSessions.some((s) => s.id === a.session_id)

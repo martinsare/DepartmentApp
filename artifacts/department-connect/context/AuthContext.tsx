@@ -22,29 +22,53 @@ function resolveIdentifier(identifier: string): string | undefined {
   return undefined;
 }
 
+async function fetchProfile(email: string): Promise<User | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .single();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    role: data.role as UserRole,
+    full_name: data.full_name,
+    email: data.email,
+    matric_number: data.matric_number ?? undefined,
+    department_id: data.department_id,
+    level: data.level ?? undefined,
+    phone: data.phone ?? undefined,
+    avatar_url: data.avatar_url ?? undefined,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session?.user) {
-          const profile = DEMO_USERS.find((u) => u.email === data.session!.user.email);
-          if (profile) setUser(profile);
+      // Restore session from Supabase
+      supabase.auth.getSession().then(async ({ data }) => {
+        if (data.session?.user?.email) {
+          const profile = await fetchProfile(data.session.user.email);
+          setUser(profile ?? DEMO_USERS.find((u) => u.email === data.session!.user.email) ?? null);
         }
         setLoading(false);
       });
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          const profile = DEMO_USERS.find((u) => u.email === session.user.email);
-          if (profile) setUser(profile);
+
+      const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.user?.email) {
+          const profile = await fetchProfile(session.user.email);
+          setUser(profile ?? DEMO_USERS.find((u) => u.email === session.user.email) ?? null);
         } else {
           setUser(null);
         }
       });
       return () => listener.subscription.unsubscribe();
     } else {
+      // Demo mode — restore from AsyncStorage
       AsyncStorage.getItem(STORAGE_KEY).then((id) => {
         if (id) {
           const found = DEMO_USERS.find((u) => u.id === id);
@@ -55,16 +79,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = async (identifier: string, _password: string): Promise<{ error?: string; role?: UserRole }> => {
+  const login = async (
+    identifier: string,
+    password: string
+  ): Promise<{ error?: string; role?: UserRole }> => {
     if (isSupabaseConfigured && supabase) {
+      // Try Supabase auth first
       const { error, data } = await supabase.auth.signInWithPassword({
-        email: identifier,
-        password: _password,
+        email: identifier.toLowerCase(),
+        password,
       });
-      if (error) return { error: error.message };
-      const profile = DEMO_USERS.find((u) => u.email === data.user?.email);
-      return { role: profile?.role };
+      if (!error && data.user?.email) {
+        const profile = await fetchProfile(data.user.email);
+        if (profile) {
+          setUser(profile);
+          return { role: profile.role };
+        }
+      }
+      // Fall through to demo login if Supabase auth fails (demo users aren't in auth)
     }
+
+    // Demo mode login (email, matric number, or password = anything)
     const userId = resolveIdentifier(identifier);
     if (!userId) return { error: "Invalid email, matric number, or password" };
     const found = DEMO_USERS.find((u) => u.id === userId);
