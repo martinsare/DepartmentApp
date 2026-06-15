@@ -7,7 +7,7 @@ import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { LiveStatusBadge } from "@/components/LiveStatusBadge";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { ClassSession } from "@/lib/demoData";
+import { ClassSession } from "@/lib/types";
 
 export default function StudentClasses() {
   const colors = useColors();

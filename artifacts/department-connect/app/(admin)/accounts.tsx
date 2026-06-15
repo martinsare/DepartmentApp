@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UserDetailModal } from "@/components/UserDetailModal";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { User, UserRole } from "@/lib/demoData";
+import { User, UserRole } from "@/lib/types";
 
 const ROLE_COLORS: Record<UserRole, string> = {
   admin: "#7C3AED",

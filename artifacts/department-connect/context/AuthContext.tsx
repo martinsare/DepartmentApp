@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, UserRole } from "@/lib/demoData";
+import { User, UserRole } from "@/lib/types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { DEFAULT_DEPARTMENT_ID } from "@/lib/demoData";
+import { DEFAULT_DEPARTMENT_ID } from "@/lib/types";
 
 interface SignUpData {
   email: string;

@@ -18,7 +18,7 @@ import { AnnouncementDetailModal } from "@/components/AnnouncementDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { Announcement } from "@/lib/demoData";
+import { Announcement } from "@/lib/types";
 
 const TYPES: Announcement["type"][] = ["general", "assignment", "test", "emergency"];
 

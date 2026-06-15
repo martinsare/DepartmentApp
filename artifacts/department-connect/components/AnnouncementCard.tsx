@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Announcement } from "@/lib/demoData";
+import { Announcement } from "@/lib/types";
 import { useColors } from "@/hooks/useColors";
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; icon: string }> = {

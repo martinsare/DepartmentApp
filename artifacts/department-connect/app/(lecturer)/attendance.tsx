@@ -15,7 +15,7 @@ import { LiveStatusBadge } from "@/components/LiveStatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { LiveStatus } from "@/lib/demoData";
+import { LiveStatus } from "@/lib/types";
 
 const LIVE_STEPS: { status: LiveStatus["status"]; label: string; icon: string }[] = [
   { status: "lecturer_arrived", label: "Arrived", icon: "log-in" },

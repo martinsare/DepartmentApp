@@ -9,7 +9,7 @@ import {
   LiveStatus,
   Payment,
   User,
-} from "@/lib/demoData";
+} from "@/lib/types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 interface DataContextValue {

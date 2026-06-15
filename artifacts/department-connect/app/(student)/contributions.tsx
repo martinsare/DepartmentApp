@@ -17,7 +17,7 @@ import { ContributionCard } from "@/components/ContributionCard";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { Contribution, Payment } from "@/lib/demoData";
+import { Contribution, Payment } from "@/lib/types";
 
 export default function StudentContributions() {
   const colors = useColors();

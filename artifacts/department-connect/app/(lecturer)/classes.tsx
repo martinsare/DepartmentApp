@@ -18,7 +18,7 @@ import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { ClassSession } from "@/lib/demoData";
+import { ClassSession } from "@/lib/types";
 
 const STATUSES: ClassSession["status"][] = ["scheduled", "ongoing", "ended", "cancelled"];
 

@@ -15,7 +15,7 @@ import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { Course } from "@/lib/demoData";
+import { Course } from "@/lib/types";
 
 export default function AdminCourses() {
   const colors = useColors();

@@ -4,7 +4,7 @@ import React from "react";
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { Announcement } from "@/lib/demoData";
+import { Announcement } from "@/lib/types";
 
 const TYPE_CONFIG: Record<string, { bg: string; text: string; icon: any; label: string }> = {
   general:    { bg: "#EDE9FE", text: "#5B21B6", icon: "info",           label: "General" },

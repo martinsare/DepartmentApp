@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Platform, StyleSheet, Text, View } from "react-native";
-import { LiveStatus } from "@/lib/demoData";
+import { LiveStatus } from "@/lib/types";
 
 const STATUS_CONFIG: Record<
   LiveStatus["status"],

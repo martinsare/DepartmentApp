@@ -5,7 +5,7 @@ import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { ClassSession } from "@/lib/demoData";
+import { ClassSession } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
   scheduled: { bg: "#EDE9FE", text: "#5B21B6", label: "Scheduled" },

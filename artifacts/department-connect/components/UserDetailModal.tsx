@@ -4,7 +4,7 @@ import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { User } from "@/lib/demoData";
+import { User } from "@/lib/types";
 
 const ROLE_CONFIG: Record<string, { color: string; icon: any; label: string }> = {
   admin:    { color: "#7C3AED", icon: "shield",    label: "Admin" },

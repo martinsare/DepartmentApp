@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Contribution } from "@/lib/demoData";
+import { Contribution } from "@/lib/types";
 import { useColors } from "@/hooks/useColors";
 
 function daysLeft(deadline: string) {

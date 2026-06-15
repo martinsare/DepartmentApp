@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { Contribution } from "@/lib/demoData";
+import { Contribution } from "@/lib/types";
 
 export default function AdminContributions() {
   const colors = useColors();

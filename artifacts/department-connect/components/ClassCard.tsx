@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { ClassSession } from "@/lib/demoData";
+import { ClassSession } from "@/lib/types";
 import { useColors } from "@/hooks/useColors";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {

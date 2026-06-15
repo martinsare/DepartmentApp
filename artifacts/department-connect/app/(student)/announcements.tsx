@@ -6,7 +6,7 @@ import { AnnouncementCard } from "@/components/AnnouncementCard";
 import { AnnouncementDetailModal } from "@/components/AnnouncementDetailModal";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
-import { Announcement } from "@/lib/demoData";
+import { Announcement } from "@/lib/types";
 
 const FILTERS = ["all", "general", "assignment", "test", "emergency"] as const;
 type Filter = (typeof FILTERS)[number];
