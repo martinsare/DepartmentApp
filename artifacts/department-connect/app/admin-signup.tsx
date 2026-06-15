@@ -71,7 +71,7 @@ export default function AdminSignupScreen() {
       return;
     }
 
-    const { error: profileError } = await supabase.from("profiles").insert({
+    const { error: profileError } = await supabase.from("profiles").upsert({
       id: data.user.id,
       role: "admin",
       full_name: fullName.trim(),
@@ -79,7 +79,7 @@ export default function AdminSignupScreen() {
       phone: phone.trim() || null,
       department_id: DEFAULT_DEPARTMENT_ID,
       status: "active",
-    });
+    }, { onConflict: "id" });
 
     setLoading(false);
 
