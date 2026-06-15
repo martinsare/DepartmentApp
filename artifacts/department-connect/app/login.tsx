@@ -257,6 +257,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </Animated.View>
 
+        <Animated.View style={[styles.adminRow, { opacity: formOpacity }]}>
+          <TouchableOpacity onPress={() => router.push("/admin-signup")} activeOpacity={0.6}>
+            <Text style={[styles.adminLink, { color: colors.mutedForeground }]}>
+              Admin? Register here
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -340,4 +348,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   signupBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  adminRow: { alignItems: "center", marginTop: 20 },
+  adminLink: { fontSize: 12, fontFamily: "Inter_400Regular" },
 });
