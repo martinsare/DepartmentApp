@@ -5,6 +5,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
 
+function EmptyState({ icon, message }: { icon: string; message: string }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.emptyBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.emptyIconWrap, { backgroundColor: colors.muted }]}>
+        <Feather name={icon as any} size={28} color={colors.mutedForeground} />
+      </View>
+      <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{message}</Text>
+    </View>
+  );
+}
+
 export default function AdminAnalytics() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -56,42 +68,50 @@ export default function AdminAnalytics() {
 
       {/* Attendance by course */}
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Attendance by Course</Text>
-      {courseAttendance.map(({ course, rate }) => (
-        <View key={course.id} style={[styles.courseRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.courseInfo}>
-            <Text style={[styles.courseCode, { color: colors.primary }]}>{course.code}</Text>
-            <Text style={[styles.courseTitle, { color: colors.foreground }]} numberOfLines={1}>{course.title}</Text>
-          </View>
-          <View style={styles.rateSection}>
-            <Text style={[styles.rate, { color: rate >= 75 ? "#10B981" : rate >= 50 ? "#F59E0B" : "#EF4444" }]}>{rate}%</Text>
-            <View style={[styles.miniBarBg, { backgroundColor: colors.border }]}>
-              <View style={[styles.miniBarFill, { width: `${rate}%` as any, backgroundColor: rate >= 75 ? "#10B981" : rate >= 50 ? "#F59E0B" : "#EF4444" }]} />
+      {courseAttendance.length === 0 ? (
+        <EmptyState icon="calendar" message="No attendance recorded yet. Sessions will appear here once classes begin." />
+      ) : (
+        courseAttendance.map(({ course, rate }) => (
+          <View key={course.id} style={[styles.courseRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.courseInfo}>
+              <Text style={[styles.courseCode, { color: colors.primary }]}>{course.code}</Text>
+              <Text style={[styles.courseTitle, { color: colors.foreground }]} numberOfLines={1}>{course.title}</Text>
+            </View>
+            <View style={styles.rateSection}>
+              <Text style={[styles.rate, { color: rate >= 75 ? "#10B981" : rate >= 50 ? "#F59E0B" : "#EF4444" }]}>{rate}%</Text>
+              <View style={[styles.miniBarBg, { backgroundColor: colors.border }]}>
+                <View style={[styles.miniBarFill, { width: `${rate}%` as any, backgroundColor: rate >= 75 ? "#10B981" : rate >= 50 ? "#F59E0B" : "#EF4444" }]} />
+              </View>
             </View>
           </View>
-        </View>
-      ))}
+        ))
+      )}
 
       {/* Collection progress */}
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Contribution Collection</Text>
-      {contributions.map((c) => {
-        const paid = payments.filter((p) => p.contribution_id === c.id && p.status === "paid").reduce((acc, p) => acc + p.amount, 0);
-        const pct = c.target_amount > 0 ? Math.round((paid / c.target_amount) * 100) : 0;
-        return (
-          <View key={c.id} style={[styles.collectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.collectionHeader}>
-              <Text style={[styles.collectionTitle, { color: colors.foreground }]}>{c.title}</Text>
-              <Text style={[styles.collectionPct, { color: colors.primary }]}>{pct}%</Text>
+      {contributions.length === 0 ? (
+        <EmptyState icon="dollar-sign" message="No contributions set up yet. Create a contribution to start tracking collection." />
+      ) : (
+        contributions.map((c) => {
+          const paid = payments.filter((p) => p.contribution_id === c.id && p.status === "paid").reduce((acc, p) => acc + p.amount, 0);
+          const pct = c.target_amount > 0 ? Math.round((paid / c.target_amount) * 100) : 0;
+          return (
+            <View key={c.id} style={[styles.collectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.collectionHeader}>
+                <Text style={[styles.collectionTitle, { color: colors.foreground }]}>{c.title}</Text>
+                <Text style={[styles.collectionPct, { color: colors.primary }]}>{pct}%</Text>
+              </View>
+              <View style={[styles.collectionBarBg, { backgroundColor: colors.border }]}>
+                <View style={[styles.collectionBarFill, { backgroundColor: colors.primary, width: `${pct}%` as any }]} />
+              </View>
+              <View style={styles.collectionAmounts}>
+                <Text style={[styles.collectionCollected, { color: colors.foreground }]}>₦{paid.toLocaleString()} collected</Text>
+                <Text style={[styles.collectionTarget, { color: colors.mutedForeground }]}>of ₦{c.target_amount.toLocaleString()}</Text>
+              </View>
             </View>
-            <View style={[styles.collectionBarBg, { backgroundColor: colors.border }]}>
-              <View style={[styles.collectionBarFill, { backgroundColor: colors.primary, width: `${pct}%` as any }]} />
-            </View>
-            <View style={styles.collectionAmounts}>
-              <Text style={[styles.collectionCollected, { color: colors.foreground }]}>₦{paid.toLocaleString()} collected</Text>
-              <Text style={[styles.collectionTarget, { color: colors.mutedForeground }]}>of ₦{c.target_amount.toLocaleString()}</Text>
-            </View>
-          </View>
-        );
-      })}
+          );
+        })
+      )}
     </ScrollView>
   );
 }
@@ -122,4 +142,25 @@ const styles = StyleSheet.create({
   collectionAmounts: { flexDirection: "row", justifyContent: "space-between" },
   collectionCollected: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   collectionTarget: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  emptyBox: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 28,
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 20,
+  },
+  emptyIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 20,
+  },
 });
