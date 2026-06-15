@@ -16,11 +16,11 @@ paths = [ "/" ]
 localPort = 18351
 
 [services.development]
-run = "pnpm --filter @workspace/department-connect run dev"
+run = "npm run dev --workspace=department-connect"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/department-connect", "run", "build" ]
-run = [ "pnpm", "--filter", "@workspace/department-connect", "run", "serve" ]
+build = [ "npm", "run", "build", "--workspace=department-connect" ]
+run = [ "npm", "run", "serve", "--workspace=department-connect" ]
 
 [services.env]
 PORT = "18351"

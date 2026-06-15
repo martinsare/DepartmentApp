@@ -1,19 +1,20 @@
-# [Project name]
+# Department Connect
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A full-featured Expo (React Native) mobile app for university departments, backed by an Express API server.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `npm run dev --workspace=@workspace/api-server` — run the API server (port 5000)
+- `npm run typecheck` — full typecheck across all packages
+- `npm run build` — typecheck + build all packages
+- `npm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `npm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
+- npm workspaces, Node.js 24, TypeScript 5.9
+- Mobile: Expo (React Native), expo-router
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,15 +23,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/department-connect/` — Expo mobile app
+- `artifacts/api-server/` — Express API server
+- `lib/db/` — Drizzle ORM schema (source of truth for DB)
+- `lib/api-spec/` — OpenAPI spec (source of truth for API contract)
+- `lib/api-zod/` — generated Zod schemas from spec
+- `lib/api-client-react/` — generated React Query hooks from spec
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Migrated from pnpm to npm workspaces; see Gotchas for required install flags.
+- `expo` and `react-native` are pinned in root `package.json` `devDependencies` to force them to root `node_modules` (avoids split-resolution errors with expo-router and metro).
+- esbuild is overridden to `0.25.8` globally (esbuild-plugin-pino requires `<=0.25.8`).
+- `@babel/traverse--for-generate-function-map` (metro-source-map npm alias) declared at root so npm materializes it.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+University department mobile app — browse departments, connect with staff, manage events and notifications.
 
 ## User preferences
 
@@ -38,7 +47,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **npm install**: always run with `NODE_OPTIONS='--max-old-space-size=4096' npm install --prefer-dedupe`. The `prefer-dedupe=true` is in `.npmrc`. Without `--prefer-dedupe`, npm crashes with `TypeError: Invalid Version:` when placing react-native@0.81.5 (arborist bug with empty version in canDedupe).
+- **ENOTEMPTY retries**: Metro bundler holds node_modules files open; `npm install` may need 2–3 retries with temp-dir cleanup. Use a retry loop that checks `$?` directly (not `npm install | tail` — pipe exit code is tail's).
+- **esbuild pin**: api-server must use esbuild@0.25.8 — esbuild-plugin-pino@2.3.3 requires `>=0.25.0 <=0.25.8`.
+- **`dept-connect` package name**: is `department-connect` (no `@workspace/` scope) — workflow uses `npm run dev --workspace=department-connect`.
 
 ## Pointers
 

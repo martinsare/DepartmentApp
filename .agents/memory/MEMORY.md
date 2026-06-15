@@ -1,0 +1,1 @@
+- [npm-workspace-expo-install](npm-workspace-expo-install.md) — Expo + React Native in npm workspaces requires specific install flags and root-level dep overrides to succeed.
