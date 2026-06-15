@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ChangePasswordModal } from "@/components/ChangePasswordModal";
+import { NotificationPrefsModal } from "@/components/NotificationPrefsModal";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -34,6 +36,8 @@ export default function StudentProfile() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const topPad = insets.top;
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showNotifPrefs, setShowNotifPrefs] = useState(false);
 
   const handleLogout = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -42,6 +46,7 @@ export default function StudentProfile() {
   };
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: insets.bottom + 90 }]}
@@ -73,12 +78,16 @@ export default function StudentProfile() {
       )}
 
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SETTINGS</Text>
-      <ProfileRow icon="lock" label="Change Password" onPress={() => {}} />
-      <ProfileRow icon="bell" label="Notification Preferences" onPress={() => {}} />
+      <ProfileRow icon="lock" label="Change Password" onPress={() => setShowChangePassword(true)} />
+      <ProfileRow icon="bell" label="Notification Preferences" onPress={() => setShowNotifPrefs(true)} />
 
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SESSION</Text>
       <ProfileRow icon="log-out" label="Sign Out" onPress={handleLogout} danger />
     </ScrollView>
+
+    <ChangePasswordModal visible={showChangePassword} onClose={() => setShowChangePassword(false)} />
+    <NotificationPrefsModal visible={showNotifPrefs} onClose={() => setShowNotifPrefs(false)} />
+    </>
   );
 }
 
