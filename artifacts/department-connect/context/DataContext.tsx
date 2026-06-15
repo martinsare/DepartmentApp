@@ -222,7 +222,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           };
           setAnnouncements((prev) => {
             if (prev.find((a) => a.id === ann.id)) return prev;
-            scheduleAnnouncementNotification(ann.title, ann.body);
+            scheduleAnnouncementNotification(ann.title, ann.body, ann.type);
             return [ann, ...prev];
           });
           return currentUsers;
@@ -304,7 +304,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (prev.find((a) => a.id === ann.id)) return prev;
       return [ann, ...prev];
     });
-    scheduleAnnouncementNotification(ann.title, ann.body);
+    scheduleAnnouncementNotification(ann.title, ann.body, ann.type);
     if (isSupabaseConfigured && supabase) {
       await supabase.from("announcements").insert({
         id: ann.id,
