@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/traverse--for-generate-function-map": "npm:@babel/traverse@^7.25.3",
     "@expo-google-fonts/inter": "^0.4.0",
     "@expo/cli": "54.0.25",
     "@expo/ngrok": "^4.1.0",
@@ -63,5 +64,8 @@
     "expo-notifications": "^56.0.17",
     "lottie-react-native": "^7.3.8",
     "react-native-qrcode-svg": "^6.3.21"
+  },
+  "overrides": {
+    "esbuild": "0.25.8"
   }
 }

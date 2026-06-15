@@ -1,6 +1,6 @@
-export type UserRole = "admin" | "lecturer" | "student";
+export const DEFAULT_DEPARTMENT_ID = "dept-001";
 
-export type UserStatus = "pending" | "active" | "suspended";
+export type UserRole = "student" | "lecturer" | "admin";
 
 export interface User {
   id: string;
@@ -9,10 +9,10 @@ export interface User {
   email: string;
   matric_number?: string;
   department_id: string;
-  avatar_url?: string;
   level?: string;
   phone?: string;
-  status?: UserStatus;
+  avatar_url?: string;
+  status: "pending" | "active" | "suspended";
 }
 
 export interface Course {
@@ -20,9 +20,9 @@ export interface Course {
   title: string;
   code: string;
   lecturer_id: string;
-  department_id: string;
   lecturer_name?: string;
-  enrolled_count?: number;
+  department_id: string;
+  enrolled_count: number;
 }
 
 export interface ClassSession {
@@ -35,19 +35,7 @@ export interface ClassSession {
   date: string;
   time: string;
   venue: string;
-  status: "scheduled" | "ongoing" | "cancelled" | "ended";
-}
-
-export interface LiveStatus {
-  session_id: string;
-  status:
-    | "lecturer_arrived"
-    | "class_started"
-    | "entry_open"
-    | "entry_closing"
-    | "entry_closed"
-    | "class_ended";
-  updated_at: string;
+  status: "scheduled" | "ongoing" | "completed" | "cancelled";
 }
 
 export interface Announcement {
@@ -57,10 +45,10 @@ export interface Announcement {
   role: UserRole;
   title: string;
   body: string;
-  type: "general" | "assignment" | "test" | "emergency";
+  type: "general" | "urgent" | "event";
   department_id: string;
   created_at: string;
-  read?: boolean;
+  read: boolean;
 }
 
 export interface Contribution {
@@ -73,8 +61,6 @@ export interface Contribution {
   department_id: string;
   created_by: string;
   created_at: string;
-  paid_count?: number;
-  total_students?: number;
 }
 
 export interface Payment {
@@ -83,7 +69,7 @@ export interface Payment {
   student_id: string;
   transaction_id: string;
   amount: number;
-  status: "paid" | "pending" | "failed";
+  status: "pending" | "verified" | "rejected";
   created_at: string;
 }
 
@@ -94,8 +80,10 @@ export interface AttendanceRecord {
   student_name?: string;
   matric_number: string;
   time_recorded: string;
-  course_title?: string;
-  session_date?: string;
 }
 
-export const DEFAULT_DEPARTMENT_ID = "dept-001";
+export interface LiveStatus {
+  session_id: string;
+  status: "idle" | "live" | "ended";
+  updated_at: string;
+}
