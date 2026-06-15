@@ -154,6 +154,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: "Account created but profile setup failed. Please contact your admin." };
     }
 
+    // Auto-approve if this email was pre-invited by admin
+    if (supabase) {
+      const { data: invite } = await supabase
+        .from("invitations")
+        .select("id")
+        .eq("email", signUpData.email.toLowerCase().trim())
+        .maybeSingle();
+      if (invite) {
+        await supabase.from("profiles").update({ status: "active" }).eq("id", profileId);
+        await supabase.from("invitations").delete().eq("id", invite.id);
+      }
+    }
+
     return {};
   };
 

@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     height: 300,
     opacity: 0.07,
   },
-  logoSection: { alignItems: "center", marginBottom: 40 },
+  logoSection: { alignItems: "center", marginBottom: 64 },
   logoOuter: {
     width: 100,
     height: 100,

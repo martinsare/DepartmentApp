@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { sendApprovalEmail, sendInviteEmail, sendRejectionEmail } from "@/lib/email";
 import { scheduleAnnouncementNotification } from "@/lib/notifications";
 import {
   Announcement,
@@ -6,6 +7,7 @@ import {
   ClassSession,
   Contribution,
   Course,
+  Invitation,
   LiveStatus,
   Payment,
   User,
@@ -21,6 +23,7 @@ interface DataContextValue {
   attendance: AttendanceRecord[];
   liveStatus: Record<string, LiveStatus>;
   users: User[];
+  invitations: Invitation[];
   loading: boolean;
   markAnnouncementRead: (id: string) => void;
   updateSessionStatus: (id: string, status: ClassSession["status"]) => void;
@@ -32,8 +35,10 @@ interface DataContextValue {
   addCourse: (c: Course) => void;
   updateCourse: (id: string, patch: Partial<Course>) => void;
   addAttendance: (record: AttendanceRecord) => void;
-  approveUser: (userId: string, role: User["role"]) => Promise<void>;
-  rejectUser: (userId: string) => Promise<void>;
+  approveUser: (userId: string, role: User["role"], name: string, email: string) => Promise<void>;
+  rejectUser: (userId: string, name: string, email: string) => Promise<void>;
+  addInvitedUser: (data: Omit<Invitation, "id" | "created_at">) => Promise<{ error?: string }>;
+  removeInvitation: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -132,6 +137,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [liveStatus, setLiveStatus] = useState<Record<string, LiveStatus>>({});
   const [users, setUsers] = useState<User[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const readIdsRef = useRef<Set<string>>(new Set());
@@ -149,6 +155,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         { data: paymentRows },
         { data: attendRows },
         { data: liveRows },
+        { data: inviteRows },
       ] = await Promise.all([
         supabase.from("profiles").select("*").order("full_name"),
         supabase.from("courses").select("*"),
@@ -158,6 +165,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         supabase.from("payments").select("*"),
         supabase.from("attendance").select("*"),
         supabase.from("live_status").select("*"),
+        supabase.from("invitations").select("*").order("created_at", { ascending: false }),
       ]);
 
       const fetchedUsers: User[] = (profileRows ?? []).map((r: any) => ({
@@ -185,6 +193,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setPayments((paymentRows ?? []) as Payment[]);
       setAttendance(enrichAttendance(attendRows ?? [], userMap));
       setLiveStatus(rowsToLiveStatus(liveRows ?? []));
+      setInvitations(
+        (inviteRows ?? []).map((r: any) => ({
+          id: r.id,
+          email: r.email,
+          full_name: r.full_name,
+          role: r.role as Invitation["role"],
+          matric_number: r.matric_number ?? undefined,
+          level: r.level ?? undefined,
+          phone: r.phone ?? undefined,
+          created_at: r.created_at,
+        }))
+      );
     } catch (e) {
       console.warn("Supabase fetch failed", e);
     } finally {
@@ -222,7 +242,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           };
           setAnnouncements((prev) => {
             if (prev.find((a) => a.id === ann.id)) return prev;
-            scheduleAnnouncementNotification(ann.title, ann.body);
+            scheduleAnnouncementNotification(ann.title, ann.body, ann.type);
             return [ann, ...prev];
           });
           return currentUsers;
@@ -304,7 +324,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (prev.find((a) => a.id === ann.id)) return prev;
       return [ann, ...prev];
     });
-    scheduleAnnouncementNotification(ann.title, ann.body);
+    scheduleAnnouncementNotification(ann.title, ann.body, ann.type);
     if (isSupabaseConfigured && supabase) {
       await supabase.from("announcements").insert({
         id: ann.id,
@@ -391,19 +411,57 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const approveUser = useCallback(async (userId: string, role: User["role"]) => {
+  const approveUser = useCallback(async (userId: string, role: User["role"], name: string, email: string) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, status: "active" as const, role } : u))
     );
     if (isSupabaseConfigured && supabase) {
       await supabase.from("profiles").update({ status: "active", role }).eq("id", userId);
     }
+    sendApprovalEmail(name, email);
   }, []);
 
-  const rejectUser = useCallback(async (userId: string) => {
+  const rejectUser = useCallback(async (userId: string, name: string, email: string) => {
     setUsers((prev) => prev.filter((u) => u.id !== userId));
     if (isSupabaseConfigured && supabase) {
       await supabase.from("profiles").delete().eq("id", userId);
+    }
+    sendRejectionEmail(name, email);
+  }, []);
+
+  const addInvitedUser = useCallback(async (
+    data: Omit<Invitation, "id" | "created_at">
+  ): Promise<{ error?: string }> => {
+    const newInv: Invitation = {
+      id: Math.random().toString(36).slice(2),
+      ...data,
+      created_at: new Date().toISOString(),
+    };
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from("invitations").insert({
+        email: data.email,
+        full_name: data.full_name,
+        role: data.role,
+        matric_number: data.matric_number ?? null,
+        level: data.level ?? null,
+        phone: data.phone ?? null,
+      });
+      if (error) {
+        if (error.message.includes("duplicate") || error.message.includes("unique")) {
+          return { error: "This email has already been invited." };
+        }
+        return { error: error.message };
+      }
+    }
+    setInvitations((prev) => [newInv, ...prev]);
+    sendInviteEmail(data.full_name, data.email, data.role);
+    return {};
+  }, []);
+
+  const removeInvitation = useCallback(async (id: string) => {
+    setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from("invitations").delete().eq("id", id);
     }
   }, []);
 
@@ -431,6 +489,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         addAttendance,
         approveUser,
         rejectUser,
+        addInvitedUser,
+        removeInvitation,
+        invitations,
         refresh: fetchAll,
       }}
     >
