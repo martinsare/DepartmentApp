@@ -15,6 +15,17 @@ export interface User {
   status: "pending" | "active" | "suspended";
 }
 
+export interface Invitation {
+  id: string;
+  email: string;
+  full_name: string;
+  role: "student" | "lecturer";
+  matric_number?: string;
+  level?: string;
+  phone?: string;
+  created_at: string;
+}
+
 export interface Course {
   id: string;
   title: string;
