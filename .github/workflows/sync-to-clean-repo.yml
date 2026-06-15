@@ -1,0 +1,38 @@
+name: Sync to Clean Repo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "artifacts/department-connect/**"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Replit repo
+        uses: actions/checkout@v4
+
+      - name: Sync to clean repo
+        env:
+          CLEAN_REPO_TOKEN: ${{ secrets.CLEAN_REPO_TOKEN }}
+          CLEAN_REPO: ${{ secrets.CLEAN_REPO }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+          git clone https://x-access-token:${CLEAN_REPO_TOKEN}@github.com/${CLEAN_REPO}.git /tmp/clean-repo
+
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.expo' \
+            --exclude='*.log' \
+            artifacts/department-connect/ /tmp/clean-repo/
+
+          cd /tmp/clean-repo
+          git add -A
+          git diff --staged --quiet && echo "Nothing to sync." && exit 0
+          git commit -m "sync: ${{ github.sha }}"
+          git push
