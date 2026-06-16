@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "department-connect",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
@@ -41,7 +41,14 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "autolinkingModuleResolution": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7144aec8-28b2-4af8-8320-643b6425b7bd"
+      }
     }
   }
 }
