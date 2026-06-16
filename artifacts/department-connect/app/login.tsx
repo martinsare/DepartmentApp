@@ -243,24 +243,24 @@ export default function LoginScreen() {
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
         </Animated.View>
 
-        <Animated.View style={{ opacity: formOpacity }}>
-          <TouchableOpacity
-            style={[
-              styles.signupBtn,
-              { borderColor: colors.primary, backgroundColor: colors.primary + "10" },
+          <Animated.View style={{ opacity: formOpacity }}>
+            <TouchableOpacity
+              style={[
+                styles.signupBtn,
+                { borderColor: colors.primary, backgroundColor: colors.primary + "10" },
             ]}
             onPress={() => router.push("/signup")}
             activeOpacity={0.85}
           >
-            <Feather name="user-plus" size={18} color={colors.primary} />
-            <Text style={[styles.signupBtnText, { color: colors.primary }]}>Create Account</Text>
-          </TouchableOpacity>
-        </Animated.View>
+              <Feather name="user-plus" size={18} color={colors.primary} />
+              <Text style={[styles.signupBtnText, { color: colors.primary }]}>Create Account</Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
-}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 24 },

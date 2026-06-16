@@ -7,7 +7,7 @@ interface SignUpData {
   email: string;
   password: string;
   full_name: string;
-  role: "student" | "lecturer";
+  role: "student" | "lecturer" | "admin";
   matric_number?: string;
   level?: string;
   phone?: string;
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!data.user) return { error: "Signup failed. Please try again." };
 
     const profileId = data.user.id;
-    const { error: profileError } = await supabase.from("profiles").insert({
+    const { error: profileError } = await supabase.from("profiles").upsert({
       id: profileId,
       role: signUpData.role,
       full_name: signUpData.full_name.trim(),
@@ -148,10 +148,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       level: signUpData.level || null,
       phone: signUpData.phone?.trim() || null,
       department_id: DEFAULT_DEPARTMENT_ID,
+      status: signUpData.role === "admin" ? "active" : "pending",
+    }, {
+      onConflict: "id",
     });
 
     if (profileError) {
-      return { error: "Account created but profile setup failed. Please contact your admin." };
+      console.warn("Profile setup failed:", profileError);
+      return { error: profileError.message };
     }
 
     // Auto-approve if this email was pre-invited by admin
