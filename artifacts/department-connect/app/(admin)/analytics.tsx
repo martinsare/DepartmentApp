@@ -1,166 +1,157 @@
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useData } from "@/context/DataContext";
 import { useColors } from "@/hooks/useColors";
 
-function EmptyState({ icon, message }: { icon: string; message: string }) {
+export default function AdminAnalytics() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { users, courses, sessions, attendance, payments, contributions } = useData();
+
+  const students = users.filter((u) => u.role === "student" && u.status === "active");
+  const lecturers = users.filter((u) => u.role === "lecturer" && u.status === "active");
+  const pendingUsers = users.filter((u) => u.status === "pending");
+  const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+  const totalTarget = contributions.reduce((s, c) => s + c.target_amount, 0);
+  const paymentRate = totalTarget > 0 ? Math.round((totalPaid / totalTarget) * 100) : 0;
+  const endedSessions = sessions.filter((s) => s.status === "ended" || s.status === "completed");
+  const avgAttendance = endedSessions.length > 0
+    ? Math.round((attendance.length / endedSessions.length) * 10) / 10
+    : 0;
+  const overallAttRate = endedSessions.length > 0 && students.length > 0
+    ? Math.round((attendance.length / (endedSessions.length * students.length)) * 100)
+    : 0;
+
+  const courseStats = courses.map((c) => {
+    const cSessions = sessions.filter((s) => s.course_id === c.id && (s.status === "ended" || s.status === "completed"));
+    const cAtt = attendance.filter((a) => cSessions.some((s) => s.id === a.session_id));
+    const attRate = cSessions.length > 0 && students.length > 0
+      ? Math.round((cAtt.length / (cSessions.length * students.length)) * 100)
+      : 0;
+    return { course: c, sessions: cSessions.length, attendance: cAtt.length, attRate };
+  }).sort((a, b) => b.attRate - a.attRate);
+
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const KPI_CARDS = [
+    { label: "Active Students", value: students.length, sub: `${pendingUsers.length} pending approval`, icon: "users" as const, color: "#7C3AED" },
+    { label: "Active Lecturers", value: lecturers.length, sub: `${courses.length} courses assigned`, icon: "briefcase" as const, color: "#10B981" },
+    { label: "Total Sessions", value: sessions.length, sub: `${endedSessions.length} completed`, icon: "calendar" as const, color: "#3B82F6" },
+    { label: "Avg Attendance", value: `${avgAttendance}`, sub: "students per session", icon: "check-circle" as const, color: "#F59E0B" },
+    { label: "Payment Rate", value: `${paymentRate}%`, sub: `₦${totalPaid.toLocaleString()} collected`, icon: "credit-card" as const, color: "#EF4444" },
+    { label: "Attendance Rate", value: `${overallAttRate}%`, sub: "across all sessions", icon: "bar-chart-2" as const, color: "#8B5CF6" },
+  ];
+
   return (
-    <View style={[styles.emptyBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[styles.emptyIconWrap, { backgroundColor: colors.muted }]}>
-        <Feather name={icon as any} size={28} color={colors.mutedForeground} />
-      </View>
-      <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{message}</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <LinearGradient colors={["#5B21B6", "#7C3AED"]} style={[styles.header, { paddingTop: topPad + 12 }]}>
+        <Text style={styles.headerSub}>Department Overview</Text>
+        <Text style={styles.headerTitle}>Analytics</Text>
+      </LinearGradient>
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 90 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Key Metrics</Text>
+        <View style={styles.kpiGrid}>
+          {KPI_CARDS.map((k) => (
+            <View key={k.label} style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.kpiIcon, { backgroundColor: k.color + "15" }]}>
+                <Feather name={k.icon} size={17} color={k.color} />
+              </View>
+              <Text style={[styles.kpiValue, { color: colors.foreground }]}>{k.value}</Text>
+              <Text style={[styles.kpiLabel, { color: colors.mutedForeground }]}>{k.label}</Text>
+              <Text style={[styles.kpiSub, { color: colors.mutedForeground }]}>{k.sub}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Attendance by Course</Text>
+        {courseStats.length === 0 ? (
+          <View style={[styles.empty, { borderColor: colors.border }]}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No session data yet</Text>
+          </View>
+        ) : courseStats.map(({ course, sessions: sc, attendance: att, attRate }) => (
+          <View key={course.id} style={[styles.courseCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.courseHeader}>
+              <View style={[styles.codeBadge, { backgroundColor: colors.primary + "15" }]}>
+                <Text style={[styles.codeText, { color: colors.primary }]}>{course.code}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.courseTitle, { color: colors.foreground }]} numberOfLines={1}>{course.title}</Text>
+                <Text style={[styles.courseMeta, { color: colors.mutedForeground }]}>{sc} sessions · {att} check-ins</Text>
+              </View>
+              <Text style={[styles.attRate, { color: attRate >= 70 ? "#10B981" : attRate >= 50 ? "#F59E0B" : "#EF4444" }]}>{attRate}%</Text>
+            </View>
+            <View style={[styles.barBg, { backgroundColor: colors.muted }]}>
+              <View style={[styles.barFill, {
+                width: `${attRate}%` as any,
+                backgroundColor: attRate >= 70 ? "#10B981" : attRate >= 50 ? "#F59E0B" : "#EF4444",
+              }]} />
+            </View>
+          </View>
+        ))}
+
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>User Distribution</Text>
+        <View style={[styles.distCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {[
+            { label: "Students", count: students.length, color: "#7C3AED" },
+            { label: "Lecturers", count: lecturers.length, color: "#10B981" },
+            { label: "Pending", count: pendingUsers.length, color: "#F59E0B" },
+          ].map((r) => {
+            const pct = users.length > 0 ? Math.round((r.count / users.length) * 100) : 0;
+            return (
+              <View key={r.label} style={styles.distRow}>
+                <View style={styles.distLabel}>
+                  <View style={[styles.distDot, { backgroundColor: r.color }]} />
+                  <Text style={[styles.distName, { color: colors.foreground }]}>{r.label}</Text>
+                </View>
+                <View style={[styles.distBarBg, { backgroundColor: colors.muted }]}>
+                  <View style={[styles.distBarFill, { width: `${pct}%` as any, backgroundColor: r.color }]} />
+                </View>
+                <Text style={[styles.distCount, { color: colors.mutedForeground }]}>{r.count}</Text>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
-export default function AdminAnalytics() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const { courses, sessions, attendance, users, payments, contributions } = useData();
-  const topPad = insets.top;
-
-  const students = users.filter((u) => u.role === "student");
-  const totalSessions = sessions.filter((s) => s.status === "ended" || s.status === "ongoing").length;
-  const attendanceRate = totalSessions > 0 ? Math.round((attendance.length / (totalSessions * students.length)) * 100) : 0;
-  const totalCollected = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0);
-  const totalTarget = contributions.reduce((acc, c) => acc + c.target_amount, 0);
-  const collectionRate = totalTarget > 0 ? Math.round((totalCollected / totalTarget) * 100) : 0;
-
-  const courseAttendance = courses.map((course) => {
-    const courseSessions = sessions.filter((s) => s.course_id === course.id && (s.status === "ended" || s.status === "ongoing"));
-    const courseAttended = attendance.filter((a) => courseSessions.some((s) => s.id === a.session_id)).length;
-    const max = courseSessions.length * (course.enrolled_count ?? 1);
-    const rate = max > 0 ? Math.round((courseAttended / max) * 100) : 0;
-    return { course, rate, courseSessions: courseSessions.length, courseAttended };
-  });
-
-  const METRICS = [
-    { label: "Total Students", value: students.length, icon: "users", color: "#3B82F6" },
-    { label: "Total Sessions", value: totalSessions, icon: "calendar", color: colors.primary },
-    { label: "Attendance Rate", value: `${attendanceRate}%`, icon: "check-circle", color: "#10B981" },
-    { label: "Collection Rate", value: `${collectionRate}%`, icon: "dollar-sign", color: "#F59E0B" },
-  ];
-
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: insets.bottom + 90 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={[styles.title, { color: colors.foreground }]}>Analytics</Text>
-
-      {/* Key metrics */}
-      <View style={styles.metricsGrid}>
-        {METRICS.map((m) => (
-          <View key={m.label} style={[styles.metricCard, { backgroundColor: m.color + "12", borderColor: m.color + "30" }]}>
-            <View style={[styles.metricIcon, { backgroundColor: m.color }]}>
-              <Feather name={m.icon as any} size={18} color="#fff" />
-            </View>
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>{m.value}</Text>
-            <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>{m.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Attendance by course */}
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Attendance by Course</Text>
-      {courseAttendance.length === 0 ? (
-        <EmptyState icon="calendar" message="No attendance recorded yet. Sessions will appear here once classes begin." />
-      ) : (
-        courseAttendance.map(({ course, rate }) => (
-          <View key={course.id} style={[styles.courseRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.courseInfo}>
-              <Text style={[styles.courseCode, { color: colors.primary }]}>{course.code}</Text>
-              <Text style={[styles.courseTitle, { color: colors.foreground }]} numberOfLines={1}>{course.title}</Text>
-            </View>
-            <View style={styles.rateSection}>
-              <Text style={[styles.rate, { color: rate >= 75 ? "#10B981" : rate >= 50 ? "#F59E0B" : "#EF4444" }]}>{rate}%</Text>
-              <View style={[styles.miniBarBg, { backgroundColor: colors.border }]}>
-                <View style={[styles.miniBarFill, { width: `${rate}%` as any, backgroundColor: rate >= 75 ? "#10B981" : rate >= 50 ? "#F59E0B" : "#EF4444" }]} />
-              </View>
-            </View>
-          </View>
-        ))
-      )}
-
-      {/* Collection progress */}
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Contribution Collection</Text>
-      {contributions.length === 0 ? (
-        <EmptyState icon="dollar-sign" message="No contributions set up yet. Create a contribution to start tracking collection." />
-      ) : (
-        contributions.map((c) => {
-          const paid = payments.filter((p) => p.contribution_id === c.id && p.status === "paid").reduce((acc, p) => acc + p.amount, 0);
-          const pct = c.target_amount > 0 ? Math.round((paid / c.target_amount) * 100) : 0;
-          return (
-            <View key={c.id} style={[styles.collectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.collectionHeader}>
-                <Text style={[styles.collectionTitle, { color: colors.foreground }]}>{c.title}</Text>
-                <Text style={[styles.collectionPct, { color: colors.primary }]}>{pct}%</Text>
-              </View>
-              <View style={[styles.collectionBarBg, { backgroundColor: colors.border }]}>
-                <View style={[styles.collectionBarFill, { backgroundColor: colors.primary, width: `${pct}%` as any }]} />
-              </View>
-              <View style={styles.collectionAmounts}>
-                <Text style={[styles.collectionCollected, { color: colors.foreground }]}>₦{paid.toLocaleString()} collected</Text>
-                <Text style={[styles.collectionTarget, { color: colors.mutedForeground }]}>of ₦{c.target_amount.toLocaleString()}</Text>
-              </View>
-            </View>
-          );
-        })
-      )}
-    </ScrollView>
-  );
-}
-
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: 20 },
-  title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 20 },
-  metricsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 28 },
-  metricCard: { width: "47%", borderWidth: 1, borderRadius: 16, padding: 14, gap: 6 },
-  metricIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 2 },
-  metricValue: { fontSize: 24, fontFamily: "Inter_700Bold" },
-  metricLabel: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 12 },
-  courseRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 8 },
-  courseInfo: { flex: 1 },
-  courseCode: { fontSize: 11, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
-  courseTitle: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  rateSection: { alignItems: "flex-end", gap: 4, minWidth: 60 },
-  rate: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  miniBarBg: { width: 60, height: 4, borderRadius: 2, overflow: "hidden" },
-  miniBarFill: { height: "100%", borderRadius: 2 },
-  collectionCard: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 12, gap: 10 },
-  collectionHeader: { flexDirection: "row", justifyContent: "space-between" },
-  collectionTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
-  collectionPct: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  collectionBarBg: { height: 6, borderRadius: 3, overflow: "hidden" },
-  collectionBarFill: { height: "100%", borderRadius: 3 },
-  collectionAmounts: { flexDirection: "row", justifyContent: "space-between" },
-  collectionCollected: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  collectionTarget: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  emptyBox: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 28,
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
-  },
-  emptyIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24 },
+  headerSub: { color: "rgba(255,255,255,0.65)", fontSize: 11, fontFamily: "Inter_400Regular" },
+  headerTitle: { color: "#fff", fontSize: 24, fontFamily: "Inter_700Bold", marginTop: 2 },
+  scroll: { padding: 16 },
+  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 14, marginTop: 8 },
+  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 8 },
+  kpiCard: { width: "47%", borderWidth: 1, borderRadius: 16, padding: 14, gap: 4 },
+  kpiIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  kpiValue: { fontSize: 24, fontFamily: "Inter_700Bold" },
+  kpiLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  kpiSub: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  empty: { borderWidth: 1, borderRadius: 16, padding: 30, alignItems: "center" },
+  emptyText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  courseCard: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 8, gap: 10 },
+  courseHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  codeBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8 },
+  codeText: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  courseTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  courseMeta: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  attRate: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  barBg: { height: 5, borderRadius: 3, overflow: "hidden" },
+  barFill: { height: "100%", borderRadius: 3 },
+  distCard: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 12 },
+  distRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  distLabel: { flexDirection: "row", alignItems: "center", gap: 7, width: 80 },
+  distDot: { width: 8, height: 8, borderRadius: 4 },
+  distName: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  distBarBg: { flex: 1, height: 7, borderRadius: 4, overflow: "hidden" },
+  distBarFill: { height: "100%", borderRadius: 4 },
+  distCount: { fontSize: 13, fontFamily: "Inter_700Bold", width: 28, textAlign: "right" },
 });

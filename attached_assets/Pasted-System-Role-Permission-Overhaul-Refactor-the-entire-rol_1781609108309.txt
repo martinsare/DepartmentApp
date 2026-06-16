@@ -1,0 +1,103 @@
+System Role & Permission Overhaul
+Refactor the entire role and permission system for the department app. Below are the exact rules for each role.
+
+GENERAL ARCHITECTURE
+
+On every login (and app foreground resume), fetch the user's full role profile from the backend, including a is_course_rep flag and course_rep_for (course ID).
+Never hardcode role UI — always derive it from the fetched role profile.
+All data queries must be scoped server-side, not just hidden in the UI.
+
+
+ADMIN ROLE
+Admin is a system operator only. They do not interact with individual students directly.
+Admin can:
+
+Approve, reject, and suspend user accounts
+Create and manage courses (name, code, semester, assign lecturer)
+Set contribution dues and view payment records across the department
+View department-wide analytics (attendance rates, payment completion, active users)
+Post announcements to the whole department
+Configure department settings (semester, session, branding)
+Export reports as PDF or CSV
+
+Admin cannot:
+
+Assign course reps
+Message individual students
+Add students to specific courses
+View or manage class sessions directly
+
+
+LECTURER ROLE
+Lecturer only sees and manages courses they are explicitly assigned to. All queries must filter by lecturer_id.
+Lecturer can:
+
+View only their assigned courses
+View only students enrolled in their assigned courses
+Create and manage class sessions for their courses only
+Generate and close attendance QR codes for their classes
+View attendance records and stats for their classes and students
+Assign or remove a course rep from their course roster
+Post announcements scoped to their course only
+Upload materials (notes, slides) per class session
+Message their course rep directly
+Flag students with low attendance
+
+Lecturer cannot:
+
+See courses assigned to other lecturers
+See students not enrolled in their courses
+Access contribution or payment data
+Access department-wide analytics or settings
+
+
+COURSE REP ROLE
+Course rep is not a separate account. It is a flag on a student account (is_course_rep: true, course_rep_for: courseId). It is assigned and removed by the lecturer of that course.
+When is_course_rep is true, the student gets all normal student features plus:
+
+A visible rep badge on their profile
+Ability to post announcements to their course
+View the full classmates list (name + contact) for their course
+Direct message their lecturer
+Raise a course issue (submitted to the lecturer)
+View contribution payment status for their course (names + paid/unpaid only, no amounts)
+View course attendance overview as aggregate stats (no individual breakdown)
+
+When the rep flag is removed, all extra features disappear on next role refresh. No separate account deletion needed.
+
+STUDENT ROLE
+Student can:
+
+View their timetable and today's classes
+Scan QR code to mark attendance for live classes
+View their own attendance stats broken down by course
+Read announcements from admin, their lecturer, and their course rep
+View and pay their contributions
+Download class materials uploaded by their lecturer
+Edit their own profile
+Submit an issue through their course rep
+
+Student cannot:
+
+See other students' attendance or profiles
+Access any lecturer or admin features
+Post announcements
+
+
+COURSE REP ASSIGNMENT FLOW
+
+Only the lecturer of a course can assign or remove a course rep.
+The lecturer picks from the enrolled student roster of that specific course.
+Assignment immediately updates the student's is_course_rep flag and course_rep_for field in the database.
+The student receives an in-app notification that they have been made course rep.
+If the student is removed as rep, they receive a notification and the flag is cleared.
+Only one active course rep per course at a time. Assigning a new one automatically removes the previous.
+
+
+ROLE CHECK ON LOGIN
+On login and every time the app resumes from background:
+
+Fetch the user's role profile from the backend.
+If role is student, also check is_course_rep and course_rep_for.
+Render the dashboard and navigation based on the fetched role, not a cached value.
+If is_course_rep changed since last session, show the appropriate notification banner.

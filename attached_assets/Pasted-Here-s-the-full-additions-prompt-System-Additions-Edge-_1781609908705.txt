@@ -1,0 +1,118 @@
+Here's the full additions prompt:
+
+System Additions — Edge Cases, Lifecycle & Security
+Add the following to the existing role and permission system. These are not new features — they are fixes to logic holes that would break the system in real use.
+
+1. ATTENDANCE QR SECURITY
+
+Every QR code has a expires_at timestamp. Default window is 15 minutes from when the lecturer generates it. Lecturer can optionally extend to 30 minutes before generating.
+The backend validates expires_at on every scan attempt. Reject any scan after expiry regardless of what the client sends.
+Each student can only scan once per session. The backend checks for an existing attendance record with matching student_id + session_id before writing. If a duplicate is found, return an error — do not silently overwrite.
+Store the device_id or a hashed fingerprint with each attendance record. Flag duplicate device scans (two different students scanning from the same device) for the lecturer to review.
+When the QR window closes, the session attendance is locked. No manual additions unless the lecturer explicitly unlocks it.
+
+
+2. SEMESTER LIFECYCLE
+
+Every course, class session, attendance record, and course rep assignment must be tied to a semester_id.
+Admin has a "close semester" action in settings. This:
+
+Marks the semester as archived
+Sets all course rep flags (is_course_rep) to false and clears course_rep_for for all students in that semester
+Moves all class sessions and attendance records to read-only (no edits after archiving)
+Notifies all lecturers that the semester has closed
+
+
+When a new semester is created, no data carries over automatically. Lecturers must be re-assigned to courses manually by admin.
+All queries for active data must filter by the current active semester_id. Archived data is accessible in a read-only history view.
+
+
+3. STUDENT DROPS A COURSE
+
+When a student is unenrolled from a course (by admin or however enrollment is managed):
+
+Immediately revoke access to that course's materials, announcements, and attendance records
+If the student was the course rep for that course, clear is_course_rep and course_rep_for immediately
+Send a notification to the lecturer: "A student has left your course. Your course rep has been removed — please assign a new one." (only if the dropped student was the rep)
+
+
+The student's past attendance records for that course are retained in the database but no longer visible to the student.
+
+
+4. ESCALATION PATH
+
+Every student has access to a "Report a serious issue" option in their settings or profile. This is separate from the normal course rep issue flow.
+This report goes directly to admin only — it does not pass through the course rep or lecturer.
+The report form requires: issue type (select from predefined list), description, and optionally attach a screenshot.
+Admin sees all direct reports in a dedicated inbox, separate from normal announcements.
+The student receives a confirmation that their report was received. Admin can mark it as reviewed, which notifies the student.
+The course rep also has this same escalation route for unresolved issues — if a course issue they raised has had no response after 5 days, a "escalate to admin" button unlocks on that issue.
+
+
+5. NOTIFICATIONS
+Implement push notifications for the following events. All notifications must deep-link to the relevant screen.
+Student receives:
+
+Class starting in 30 minutes (with room/location if set)
+Class has been cancelled or rescheduled
+New announcement from admin, lecturer, or course rep
+Contribution due date is in 3 days (if unpaid)
+You have been assigned as course rep for [course name]
+You have been removed as course rep for [course name]
+Your serious issue report has been reviewed by admin
+
+Lecturer receives:
+
+Course rep was removed because a student dropped the course — please assign a new one
+Semester has been closed by admin
+A student has escalated an unresolved issue to admin (notification only, no content)
+
+Admin receives:
+
+New account pending approval
+A serious issue report has been submitted by a student
+A course rep escalation has been submitted
+
+
+6. AUDIT TRAIL
+Create a read-only audit_log table. Log the following events with actor_id, action, target_id, timestamp, and metadata:
+
+Account approved, rejected, or suspended (actor: admin)
+Course created or edited (actor: admin)
+Lecturer assigned to course (actor: admin)
+Course rep assigned or removed (actor: lecturer)
+Semester closed (actor: admin)
+Student unenrolled from course (actor: admin or system)
+Contribution payment recorded (actor: system or admin)
+Serious issue report submitted (actor: student, target: report ID only — no content in log)
+Attendance session opened and closed (actor: lecturer)
+
+Admin can view the full audit log filtered by date, actor, or action type. No other role can access it. Log entries can never be edited or deleted.
+
+7. OFFLINE & CACHING
+
+Cache the following locally on the student's device and refresh on every app foreground:
+
+Current semester timetable
+Last 10 announcements
+Their own attendance summary
+
+
+If the device has no connection when a student scans a QR, queue the scan locally with a timestamp and sync immediately when connection returns. If the queued timestamp falls outside the QR window, reject it on sync and notify the student.
+Show a clear "you are offline" banner when there is no connection. Do not silently fail.
+
+
+8. PROFILE REQUIREMENTS
+
+Students must complete their profile before accessing any other part of the app. Required fields: full name, matric number, level (100–500), phone number, profile photo (optional but prompted).
+Lecturers must complete: full name, staff ID, faculty, phone number.
+Profiles are verified against submitted details during account approval by admin. Admin can flag a profile as "details mismatch" which sends the user back to the profile form before they can proceed.
+
+
+9. EDGE CASES
+
+If a lecturer's account is suspended mid-semester, all their upcoming class sessions automatically move to a "cancelled" status. Students in those courses receive a cancellation notification.
+A course can have a maximum of 2 lecturers assigned (co-teaching). Both have equal access to that course's students, sessions, and attendance. Either can assign the course rep.
+If two lecturers are on a course and both try to assign different course reps at the same time, last-write-wins and the system notifies both lecturers of the current active rep.
+A student enrolled in multiple courses sees a single merged timetable sorted by date and time. If two classes clash, both are shown with a red conflict indicator.
+A student can only be course rep for one course at a time. If a lecturer tries to assign an existing rep from another course, show a warning: "This student is already course rep for [course name]. Assigning them here will remove them from that course."

@@ -21,25 +21,26 @@ export default function LecturerLayout() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          height: isWeb ? 84 : undefined,
+          height: isWeb ? 84 : 64,
+          paddingBottom: isWeb ? 34 : 8,
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView intensity={100} tint={resolvedScheme === "dark" ? "dark" : "light"} style={StyleSheet.absoluteFill} />
-          ) : isWeb ? (
+            <BlurView intensity={90} tint={resolvedScheme === "dark" ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+          ) : (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
-          ) : null,
-        tabBarLabelStyle: { fontSize: 10, fontFamily: "Inter_500Medium", marginBottom: 2 },
+          ),
+        tabBarLabelStyle: { fontSize: 10, fontFamily: "Inter_500Medium" },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Dashboard", tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} /> }} />
-      <Tabs.Screen name="classes" options={{ title: "Classes", tabBarIcon: ({ color }) => <Feather name="calendar" size={22} color={color} /> }} />
-      <Tabs.Screen name="attendance" options={{ title: "Attendance", tabBarIcon: ({ color }) => <Feather name="check-square" size={22} color={color} /> }} />
-      <Tabs.Screen name="announcements" options={{ title: "Notices", tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: "Dashboard", tabBarIcon: ({ color }) => <Feather name="grid" size={21} color={color} /> }} />
+      <Tabs.Screen name="classes" options={{ title: "Classes", tabBarIcon: ({ color }) => <Feather name="calendar" size={21} color={color} /> }} />
+      <Tabs.Screen name="attendance" options={{ title: "Attendance", tabBarIcon: ({ color }) => <Feather name="check-circle" size={21} color={color} /> }} />
+      <Tabs.Screen name="announcements" options={{ title: "Notices", tabBarIcon: ({ color }) => <Feather name="bell" size={21} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color }) => <Feather name="settings" size={21} color={color} /> }} />
     </Tabs>
   );
 }
